@@ -16,4 +16,13 @@ def iniciar_servidor():
     return server_socket
 
 if __name__ == "__main__":
-    iniciar_servidor()
+    server_socket = iniciar_servidor()
+
+    try:
+         # Issue 3: aceita UMA conexão por enquanto (bloqueante)
+        # A partir da Issue 7 isso vira um loop com threading
+        conexao, endereco = server_socket.accept()
+        ip_cliente, porta_cliente = endereco
+        print(f"[SERVIDOR] Cliente conectado: {ip_cliente}:{porta_cliente}")
+    finally:
+        server_socket.close()
