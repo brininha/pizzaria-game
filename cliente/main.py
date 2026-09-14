@@ -1,5 +1,5 @@
 from rede import conectar_servidor
-from protocolo import *
+from utils.protocolo import *
 
 def main():
     client_socket = conectar_servidor()

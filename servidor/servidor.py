@@ -1,6 +1,6 @@
 import socket
 from config import HOST, PORT
-from protocolo import *
+from utils.protocolo import *
 
 def iniciar_servidor():
     # Instancia o socket utilizando IPv4 e TCP
