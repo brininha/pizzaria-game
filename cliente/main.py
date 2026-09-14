@@ -1,4 +1,4 @@
-from rede import conectar_servidor
+from cliente.rede import conectar_servidor
 from utils.protocolo import *
 
 def main():
