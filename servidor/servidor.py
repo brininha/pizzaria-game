@@ -1,4 +1,5 @@
 import socket
+import threading
 from config import HOST, PORT
 from utils.protocolo import *
 
@@ -16,24 +17,46 @@ def iniciar_servidor():
     
     return server_socket
 
+def lidar_com_cliente(conexao, endereco):
+    # Movemos toda a lógica de recepção/envio para dentro da função
+    ip_cliente, porta_cliente = endereco
+    print(f"[SERVIDOR] Cliente conectado: {ip_cliente}:{porta_cliente}")
+    
+    try:
+        while True:
+            # Tenta receber os dados, lidando com interrupções abruptas
+            try:
+                dados = conexao.recv(1024)
+            except ConnectionResetError:
+                break # Sai do loop se a conexão for forçadamente resetada
+            
+            # Se recv() retornar zero bytes, o cliente encerrou a conexão de forma limpa
+            if not dados:
+                break
+            
+            texto_decodificado = dados.decode('utf-8')
+            comando, payload = interpretar_mensagem(texto_decodificado)
+            
+            if comando == 'ECHO':
+                resposta_bytes = formatar_mensagem("ECHO_REPLY", payload)
+                conexao.sendall(resposta_bytes)
+
+    finally:
+        # Garante que o socket específico deste cliente seja fechado sem quebrar o servidor
+        conexao.close()
+        print(f"[SERVIDOR] Conexão encerrada com {ip_cliente}:{porta_cliente}")
+
 if __name__ == "__main__":
     server_socket = iniciar_servidor()
 
     try:
-        # Issue 3: aceita UMA conexão por enquanto (bloqueante)
-        # A partir da Issue 7 isso vira um loop com threading
-        conexao, endereco = server_socket.accept()
-        ip_cliente, porta_cliente = endereco
-        print(f"[SERVIDOR] Cliente conectado: {ip_cliente}:{porta_cliente}")
-        
-        dados = conexao.recv(1024)
-        texto_decodificado = dados.decode('utf-8')
-        
-        comando, payload = interpretar_mensagem(texto_decodificado)
-        
-        if comando == 'ECHO':
-            resposta_bytes = formatar_mensagem("ECHO_REPLY", payload)
-            conexao.sendall(resposta_bytes)
+        # Loop contínuo para aceitar múltiplos clientes simultaneamente (Issue 7)
+        while True:
+            conexao, endereco = server_socket.accept()
+            
+            # Instancia e inicia uma nova thread para o cliente
+            thread = threading.Thread(target=lidar_com_cliente, args=(conexao, endereco))
+            thread.start()
 
     finally:
         server_socket.close()
