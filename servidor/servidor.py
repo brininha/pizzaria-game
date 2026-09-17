@@ -3,6 +3,8 @@ import threading
 from config import HOST, PORT
 from utils.protocolo import *
 
+clientes_online = {}
+
 def iniciar_servidor():
     # Instancia o socket utilizando IPv4 e TCP
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -41,7 +43,10 @@ def lidar_com_cliente(conexao, endereco):
                 resposta_bytes = formatar_mensagem("ECHO_REPLY", payload)
                 conexao.sendall(resposta_bytes)
 
-    finally:
+    finally:   
+        if conexao in clientes_online:
+            del clientes_online[conexao]
+        
         # Garante que o socket específico deste cliente seja fechado sem quebrar o servidor
         conexao.close()
         print(f"[SERVIDOR] Conexão encerrada com {ip_cliente}:{porta_cliente}")
