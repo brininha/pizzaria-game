@@ -44,6 +44,9 @@ def lidar_com_cliente(conexao, endereco):
                 conexao.sendall(resposta_bytes)
 
     finally:   
+        if conexao in clientes_online:
+            del clientes_online[conexao]
+        
         # Garante que o socket específico deste cliente seja fechado sem quebrar o servidor
         conexao.close()
         print(f"[SERVIDOR] Conexão encerrada com {ip_cliente}:{porta_cliente}")
