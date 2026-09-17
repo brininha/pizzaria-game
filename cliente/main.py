@@ -5,8 +5,10 @@ def main():
     client_socket = conectar_servidor()
     
     try:
-        mensagem_bytes = formatar_mensagem("ECHO", "Teste de conexao")
-        client_socket.sendall(mensagem_bytes)
+        nickname = input("Digite seu nickname: ")
+        nickname_formatado = formatar_mensagem("AUTH_CONN", nickname)
+        client_socket.sendall(nickname_formatado)
+    
         
         dados_recebidos = client_socket.recv(1024)
         texto_decodificado = dados_recebidos.decode('utf-8')
