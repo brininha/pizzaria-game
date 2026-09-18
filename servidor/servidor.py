@@ -5,6 +5,16 @@ from utils.protocolo import *
 
 clientes_online = {}
 
+def fazer_broadcast(mensagem: bytes, remetente_ignorado=None):
+    # Envia mensagem para clientes conectados e pula o envio para 'remetente_ignorado' se fornecido
+
+    for cliente_socket in list(clientes_online.keys()): # list() para evitar erros caso alguém se desconecte durante iteração
+        if cliente_socket != remetente_ignorado:
+            try:
+                cliente_socket.sendall(mensagem)
+            except Exception:
+                pass
+
 def iniciar_servidor():
     # Instancia o socket utilizando IPv4 e TCP
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -63,6 +73,10 @@ def lidar_com_cliente(conexao, endereco):
         if conexao in clientes_online:
             del clientes_online[conexao]
             print(f"[LOGOUT] Usuário '{nickname}' saiu do lobby.")
+
+            # Broadcast de saída (avisa os restantes)
+            msg_broadcast = formatar_mensagem("SYNC_STATUS", f"{nickname}_saiu")
+            fazer_broadcast(msg_broadcast)
         
         # Garante que o socket específico deste cliente seja fechado sem quebrar o servidor
         conexao.close()
