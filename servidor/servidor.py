@@ -23,8 +23,24 @@ def lidar_com_cliente(conexao, endereco):
     # Movemos toda a lógica de recepção/envio para dentro da função
     ip_cliente, porta_cliente = endereco
     print(f"[SERVIDOR] Cliente conectado: {ip_cliente}:{porta_cliente}")
+
+    nickname = None
     
     try:
+        dados_auth = conexao.recv(1024)
+        if not dados_auth:
+            print(f"[SERVIDOR] Conexão encerrada abruptamente por {ip_cliente}:{porta_cliente}")
+            return
+
+        texto_decodificado = dados_auth.decode('utf-8')
+        comando, payload = interpretar_mensagem(texto_decodificado)
+
+        if comando == "AUTH_CONN":
+            nickname = payload
+            clientes_online[conexao] = nickname
+            print(f"[LOGIN] Usuário '{nickname}' entrou no lobby.")
+            conexao.sendall(formatar_mensagem("AUTH_REPLY", "OK"))
+
         while True:
             # Tenta receber os dados, lidando com interrupções abruptas
             try:
@@ -46,6 +62,7 @@ def lidar_com_cliente(conexao, endereco):
     finally:   
         if conexao in clientes_online:
             del clientes_online[conexao]
+            print(f"[LOGOUT] Usuário '{nickname}' saiu do lobby.")
         
         # Garante que o socket específico deste cliente seja fechado sem quebrar o servidor
         conexao.close()
