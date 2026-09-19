@@ -37,6 +37,12 @@ def main():
         thread_escuta.daemon = True
         thread_escuta.start()
         
+        while True:
+            texto_digitado = input()
+            
+            mensagem_formatada = formatar_mensagem("SEND_CHAT", texto_digitado)
+            client_socket.sendall(mensagem_formatada)
+        
     except KeyboardInterrupt:
         print("\n[CLIENTE] Encerramento forçado pelo utilizador.")    
     finally:
