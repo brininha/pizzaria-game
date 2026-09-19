@@ -37,6 +37,8 @@ def main():
         thread_escuta.daemon = True
         thread_escuta.start()
         
+    except KeyboardInterrupt:
+        print("\n[CLIENTE] Encerramento forçado pelo utilizador.")    
     finally:
         client_socket.close()
         print("[CLIENTE] Conexão encerrada.")
