@@ -9,7 +9,7 @@ Ou seja, o cliente pode ficar horas com a sua linha principal travada pensando n
 mas a recepção de mensagens continuará a acontecer em simultâneo através da thread em segundo plano.
 Muito legal.
 '''
-
+import os
 import threading
 from cliente.rede import conectar_servidor
 from utils.protocolo import *
@@ -34,9 +34,12 @@ def escutar_servidor(client_socket):
             print(f"\n[MENSAGEM RECEBIDA]: {comando} {payload}")
             
     except ConnectionResetError:
-        print("\n[ERRO] O servidor foi desconectado abruptamente.")
+        print("\n[ERRO] O servidor foi desconectado abruptamente.", flush=True)
     except Exception as e:
-        print(f"\n[ERRO] Falha na recepção: {e}")
+        print(f"\n[ERRO] Falha na recepção: {e}", flush=True)
+    finally:
+        client_socket.close()
+        os._exit(0)  # Encerra o programa imediatamente, mesmo que outras threads estejam rodando
 
 def main():
     client_socket = conectar_servidor()
