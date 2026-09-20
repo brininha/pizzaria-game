@@ -1,3 +1,22 @@
+'''
+COMENTÁRIOS ELUCIDATIVOS
+
+Esse arquivo contempla duas funções utilitárias usadas para codificar e decodificar mensagens.
+
+Entendendo os parâmetros:
+Comando: instrução de entrega, usada para identificar a ação esperada pela tentativa de comunicação.
+Payload: é o conteúdo da mensagem, a informação que acompanha o comando.
+Exemplo: comando "SEND_CHAT" com payload "Oie, tudo bem?", a informação (payload) foi rotulada (comando).
+
+Podemos pensar que estamos enviando cartas com rótulos e o texto em questão.
+
+Breve explicação das funções:
+formatar_mensagem(...) é usada para envio de mensagens, elas tem que ir em linguagem que a máquina 
+entende, por isso é codificada em bytes.
+interpretar_mensagem(...) é usada para mensagens que chegam, decodificamos o que está escrito para
+conseguirmos interpretar a mensagem na linguagem humana.
+'''
+
 from config import ENCODING
 
 def formatar_mensagem(comando: str, payload: str = "") -> bytes:

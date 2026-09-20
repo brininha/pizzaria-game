@@ -1,3 +1,15 @@
+'''
+COMENTÁRIOS ELUCIDATIVOS
+
+Vou pensar no socket como se fosse uma tomada, conecta um software a uma rede de internet.
+
+Na main desse código, o servidor fica na escuta, quando um cliente tenta se comunicar,
+abre uma thread na função paralela lidar_com_cliente, essa função vai tentar autenticar
+o cliente e ficar escutando as mensagens que ele envia, é um canal dedicado a ele.
+Na main, o servidor não fica travado, continua escutando enquanto outros fluxos podem acontecer 
+paralelamente.
+'''
+
 import socket
 import threading
 from config import HOST, PORT
@@ -18,7 +30,7 @@ def fazer_broadcast(mensagem: bytes, remetente_ignorado=None):
 def iniciar_servidor():
     # Instancia o socket utilizando IPv4 e TCP
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    
+    # Quando o servidor eh desligado, a porta eh liberada na mesma hora
     server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     
     # Associa o socket ao IP e porta e o coloca em modo de escuta
@@ -29,6 +41,7 @@ def iniciar_servidor():
     
     return server_socket
 
+# Função que roda em paralelo para cada usuário conectado
 def lidar_com_cliente(conexao, endereco):
     # Movemos toda a lógica de recepção/envio para dentro da função
     ip_cliente, porta_cliente = endereco
@@ -86,9 +99,10 @@ if __name__ == "__main__":
     server_socket = iniciar_servidor()
 
     try:
-        # Loop contínuo para aceitar múltiplos clientes simultaneamente (Issue 7)
+        # Loop contínuo para aceitar múltiplos clientes simultaneamente
         while True:
-            conexao, endereco = server_socket.accept()
+            # Esse accept() trava o servidor e fica aguardando alguém chamar
+            conexao, endereco = server_socket.accept() # canal exclusivo para o usuário que chamou
             
             # Instancia e inicia uma nova thread para o cliente
             thread = threading.Thread(target=lidar_com_cliente, args=(conexao, endereco))
