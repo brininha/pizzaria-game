@@ -90,6 +90,16 @@ def lidar_com_cliente(conexao, endereco):
                 # Distribui para todos, exceto o autor da mensagem
                 fazer_broadcast(resposta_bytes, remetente_ignorado=conexao)
 
+            elif comando == 'SYNC_STATUS':
+                # Formata a mensagem para incluir quem mudou de cor 
+                mensagem_status = f"{nickname} mudou para {payload}"
+
+                # Empacota novamente como SYNC_STATUS
+                resposta_bytes = formatar_mensagem("SYNC_STATUS", mensagem_status)
+
+                # Distribui para todos, exceto o autor da mensagem
+                fazer_broadcast(resposta_bytes, remetente_ignorado=conexao)
+
             elif comando == 'ECHO':
                 resposta_bytes = formatar_mensagem("ECHO_REPLY", payload)
                 conexao.sendall(resposta_bytes)
