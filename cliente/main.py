@@ -59,9 +59,18 @@ def main():
         while True:
             # a boca do cliente
             texto_digitado = input()
-            # empacotamento da mensagem e envio para o servidor
-            mensagem_formatada = formatar_mensagem("SEND_CHAT", texto_digitado)
-            client_socket.sendall(mensagem_formatada)
+
+            if texto_digitado.startswith("/cor "):
+
+                # Extrai apenas a cor (o payload) ignorando o "/cor" e formata com o comando "SYNC_STATUS"
+                cor_escolhida = texto_digitado.split(" ", 1)[1]
+                mensagem_formatada = formatar_mensagem("SYNC_STATUS", cor_escolhida)
+                client_socket.sendall(mensagem_formatada)
+            else:
+                # empacotamento da mensagem e envio para o servidor
+                mensagem_formatada = formatar_mensagem("SEND_CHAT", texto_digitado)
+                client_socket.sendall(mensagem_formatada)
+           
         
     except KeyboardInterrupt:
         print("\n[CLIENTE] Encerramento forçado pelo utilizador.")    
