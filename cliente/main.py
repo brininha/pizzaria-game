@@ -13,6 +13,7 @@ import os
 import threading
 from cliente.rede import conectar_servidor
 from utils.protocolo import *
+from utils.seguranca import criptografar, descriptografar
 
 # funcao isolada para recepcao de dados
 def escutar_servidor(client_socket):
@@ -30,8 +31,25 @@ def escutar_servidor(client_socket):
             # decodifica e separa o comando do payload
             texto_decodificado = dados.decode('utf-8')
             comando, payload = interpretar_mensagem(texto_decodificado)
-            
-            print(f"\n[MENSAGEM RECEBIDA]: {comando} {payload}")
+
+            # Intérprete do cliente
+            if comando == "SEND_CHAT":
+                # O servidor envia no formato "Remetente: texto_cifrado"
+                # Precisamos separar para não descriptografar o nome do remetente
+                if ": " in payload:
+                    remetente, texto_cifrado = payload.split(": ", 1)
+                    texto_limpo = descriptografar(texto_cifrado)
+                    print(f"\n[CHAT] {remetente}: {texto_limpo}")
+                else:
+                    texto_limpo = descriptografar(payload)
+                    print(f"\n[CHAT] {texto_limpo}")
+
+            elif comando == "SYNC_STATUS":
+                print(f"\n[SISTEMA] {payload}")
+
+            else:
+                # Comandos de background, como a resposta do AUTH_CONN ou ECHO
+                pass
             
     except ConnectionResetError:
         print("\n[ERRO] O servidor foi desconectado abruptamente.", flush=True)
@@ -67,8 +85,9 @@ def main():
                 mensagem_formatada = formatar_mensagem("SYNC_STATUS", cor_escolhida)
                 client_socket.sendall(mensagem_formatada)
             else:
-                # empacotamento da mensagem e envio para o servidor
-                mensagem_formatada = formatar_mensagem("SEND_CHAT", texto_digitado)
+                # Criptografa o texto antes de enviar
+                texto_cifrado = criptografar(texto_digitado)
+                mensagem_formatada = formatar_mensagem("SEND_CHAT", texto_cifrado)
                 client_socket.sendall(mensagem_formatada)
            
         
