@@ -77,8 +77,20 @@ def lidar_com_cliente(conexao, endereco):
             
             texto_decodificado = dados.decode('utf-8')
             comando, payload = interpretar_mensagem(texto_decodificado)
-            
-            if comando == 'ECHO':
+
+            # Implementação do roteamento do chat global
+            if comando == 'SEND_CHAT':
+
+                # Anexa o nome do remetente à mensagem original
+                mensagem_chat = f"{nickname}: {payload}"
+
+                # Empacota novamente como SEND_CHAT
+                resposta_bytes = formatar_mensagem("SEND_CHAT", mensagem_chat)
+
+                # Distribui para todos, exceto o autor da mensagem
+                fazer_broadcast(resposta_bytes, remetente_ignorado=conexao)
+
+            elif comando == 'ECHO':
                 resposta_bytes = formatar_mensagem("ECHO_REPLY", payload)
                 conexao.sendall(resposta_bytes)
 
