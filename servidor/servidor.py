@@ -12,6 +12,7 @@ paralelamente.
 
 import socket
 import threading
+import time
 from config import HOST, PORT
 from utils.protocolo import *
 
@@ -60,7 +61,7 @@ def lidar_com_cliente(conexao, endereco):
 
         if comando == "AUTH_CONN":
             nickname = payload
-            clientes_online[conexao] = nickname
+            clientes_online[conexao] = {"nome": nickname, "ultimo_sinal": time.time()}
             print(f"[LOGIN] Usuário '{nickname}' entrou no lobby.")
             conexao.sendall(formatar_mensagem("AUTH_REPLY", "OK"))
 
