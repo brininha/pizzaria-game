@@ -87,6 +87,10 @@ def main():
         thread_escuta.daemon = True
         thread_escuta.start()
         
+        thread_heartbeat = threading.Thread(target=enviar_heartbeat, args=(client_socket,))
+        thread_heartbeat.daemon = True
+        thread_heartbeat.start()
+        
         while True:
             # a boca do cliente
             texto_digitado = input()
