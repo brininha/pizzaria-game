@@ -12,6 +12,7 @@ paralelamente.
 
 import socket
 import threading
+import time
 from config import HOST, PORT
 from utils.protocolo import *
 
@@ -60,7 +61,7 @@ def lidar_com_cliente(conexao, endereco):
 
         if comando == "AUTH_CONN":
             nickname = payload
-            clientes_online[conexao] = nickname
+            clientes_online[conexao] = {"nome": nickname, "ultimo_sinal": time.time()}
             print(f"[LOGIN] Usuário '{nickname}' entrou no lobby.")
             conexao.sendall(formatar_mensagem("AUTH_REPLY", "OK"))
 
@@ -77,6 +78,12 @@ def lidar_com_cliente(conexao, endereco):
             
             texto_decodificado = dados.decode('utf-8')
             comando, payload = interpretar_mensagem(texto_decodificado)
+            
+            if conexao in clientes_online:
+                clientes_online[conexao]["ultimo_sinal"] = time.time()
+                
+            if comando == 'DEAD_TRIG':
+                continue
 
             # Implementação do roteamento do chat global
             if comando == 'SEND_CHAT':
@@ -89,6 +96,9 @@ def lidar_com_cliente(conexao, endereco):
 
                 # Distribui para todos, exceto o autor da mensagem
                 fazer_broadcast(resposta_bytes, remetente_ignorado=conexao)
+                
+                quem_enviou = clientes_online[conexao]["nome"]
+                print(f"[{quem_enviou} diz]: {payload}")
 
             elif comando == 'SYNC_STATUS':
                 # Formata a mensagem para incluir quem mudou de cor 
@@ -106,8 +116,9 @@ def lidar_com_cliente(conexao, endereco):
 
     finally:   
         if conexao in clientes_online:
+            nickname = clientes_online[conexao]["nome"] 
             del clientes_online[conexao]
-            print(f"[LOGOUT] Usuário '{nickname}' saiu do lobby.")
+            print(f"[SERVIDOR] {nickname} saiu do lobby.")
 
             # Broadcast de saída (avisa os restantes)
             msg_broadcast = formatar_mensagem("SYNC_STATUS", f"{nickname}_saiu")
@@ -117,11 +128,36 @@ def lidar_com_cliente(conexao, endereco):
         conexao.close()
         print(f"[SERVIDOR] Conexão encerrada com {ip_cliente}:{porta_cliente}")
 
+def monitorar_inativos():
+    while True:
+        time.sleep(10) # faz a varredura a cada 10 segundos
+        
+        tempo_atual = time.time()
+        
+        # list() cria uma copia das chaves para nao quebrar o loop durante a iteraçao
+        for cliente_socket in list(clientes_online.keys()):
+            ultimo_sinal = clientes_online[cliente_socket]["ultimo_sinal"]
+            
+            if tempo_atual - ultimo_sinal > 15: # passou do limite de tolerancia de 15s?
+                print("[SISTEMA] Removendo cliente inativo por timeout.")
+                try:
+                    cliente_socket.close() # corta a ligaçao forçadamente
+                except Exception:
+                    pass
+                
+                # Nota de arquitetura: Ao fechar o socket aqui, o recv() que estava travado 
+                # lá na função lidar_com_cliente vai rebentar. Isso empurra o código daquela 
+                # thread diretamente para o bloco 'finally', que por sua vez remove o cliente 
+                # do dicionário e avisa o lobby inteiro da queda
+
 if __name__ == "__main__":
     server_socket = iniciar_servidor()
 
     try:
         # Loop contínuo para aceitar múltiplos clientes simultaneamente
+        thread_ceifador = threading.Thread(target=monitorar_inativos)
+        thread_ceifador.daemon = True
+        thread_ceifador.start()
         while True:
             # Esse accept() trava o servidor e fica aguardando alguém chamar
             conexao, endereco = server_socket.accept() # canal exclusivo para o usuário que chamou
