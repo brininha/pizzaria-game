@@ -128,11 +128,36 @@ def lidar_com_cliente(conexao, endereco):
         conexao.close()
         print(f"[SERVIDOR] Conexão encerrada com {ip_cliente}:{porta_cliente}")
 
+def monitorar_inativos():
+    while True:
+        time.sleep(10) # faz a varredura a cada 10 segundos
+        
+        tempo_atual = time.time()
+        
+        # list() cria uma copia das chaves para nao quebrar o loop durante a iteraçao
+        for cliente_socket in list(clientes_online.keys()):
+            ultimo_sinal = clientes_online[cliente_socket]["ultimo_sinal"]
+            
+            if tempo_atual - ultimo_sinal > 15: # passou do limite de tolerancia de 15s?
+                print("[SISTEMA] Removendo cliente inativo por timeout.")
+                try:
+                    cliente_socket.close() # corta a ligaçao forçadamente
+                except Exception:
+                    pass
+                
+                # Nota de arquitetura: Ao fechar o socket aqui, o recv() que estava travado 
+                # lá na função lidar_com_cliente vai rebentar. Isso empurra o código daquela 
+                # thread diretamente para o bloco 'finally', que por sua vez remove o cliente 
+                # do dicionário e avisa o lobby inteiro da queda
+
 if __name__ == "__main__":
     server_socket = iniciar_servidor()
 
     try:
         # Loop contínuo para aceitar múltiplos clientes simultaneamente
+        thread_ceifador = threading.Thread(target=monitorar_inativos)
+        thread_ceifador.daemon = True
+        thread_ceifador.start()
         while True:
             # Esse accept() trava o servidor e fica aguardando alguém chamar
             conexao, endereco = server_socket.accept() # canal exclusivo para o usuário que chamou
