@@ -9,8 +9,10 @@ Ou seja, o cliente pode ficar horas com a sua linha principal travada pensando n
 mas a recepção de mensagens continuará a acontecer em simultâneo através da thread em segundo plano.
 Muito legal.
 '''
+
 import os
 import threading
+import time
 from cliente.rede import conectar_servidor
 from utils.protocolo import *
 from utils.seguranca import criptografar, descriptografar
@@ -58,6 +60,17 @@ def escutar_servidor(client_socket):
     finally:
         client_socket.close()
         os._exit(0)  # Encerra o programa imediatamente, mesmo que outras threads estejam rodando
+
+# funcao para enviar o pulso (keep-alive)
+def enviar_heartbeat(client_socket):
+    try:
+        while True:
+            time.sleep(5) # pausa de 5 segundos
+            mensagem = formatar_mensagem("DEAD_TRIG", "")
+            client_socket.sendall(mensagem)
+    except Exception:
+        # se a conexao cair, a thread morre silenciosamente
+        pass
 
 def main():
     client_socket = conectar_servidor()
