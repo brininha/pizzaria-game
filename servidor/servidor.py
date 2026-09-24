@@ -78,6 +78,12 @@ def lidar_com_cliente(conexao, endereco):
             
             texto_decodificado = dados.decode('utf-8')
             comando, payload = interpretar_mensagem(texto_decodificado)
+            
+            if conexao in clientes_online:
+                clientes_online[conexao]["ultimo_sinal"] = time.time()
+                
+            if comando == 'DEAD_TRIG':
+                continue
 
             # Implementação do roteamento do chat global
             if comando == 'SEND_CHAT':
@@ -90,6 +96,9 @@ def lidar_com_cliente(conexao, endereco):
 
                 # Distribui para todos, exceto o autor da mensagem
                 fazer_broadcast(resposta_bytes, remetente_ignorado=conexao)
+                
+                quem_enviou = clientes_online[conexao]["nome"]
+                print(f"[{quem_enviou} diz]: {payload}")
 
             elif comando == 'SYNC_STATUS':
                 # Formata a mensagem para incluir quem mudou de cor 
@@ -107,8 +116,9 @@ def lidar_com_cliente(conexao, endereco):
 
     finally:   
         if conexao in clientes_online:
+            nickname = clientes_online[conexao]["nome"] 
             del clientes_online[conexao]
-            print(f"[LOGOUT] Usuário '{nickname}' saiu do lobby.")
+            print(f"[SERVIDOR] {nickname} saiu do lobby.")
 
             # Broadcast de saída (avisa os restantes)
             msg_broadcast = formatar_mensagem("SYNC_STATUS", f"{nickname}_saiu")
