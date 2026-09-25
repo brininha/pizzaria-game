@@ -11,12 +11,12 @@ Muito legal.
 '''
 
 import os
+import queue
 import threading
 import time
 from cliente.rede import conectar_servidor
 from utils.protocolo import *
 from utils.seguranca import criptografar, descriptografar
-import queue
 
 fila_mensagens = queue.Queue()
 
@@ -44,17 +44,17 @@ def escutar_servidor(client_socket):
                 if ": " in payload:
                     remetente, texto_cifrado = payload.split(": ", 1)
                     texto_limpo = descriptografar(texto_cifrado)
-                    print(f"\n[CHAT] {remetente}: {texto_limpo}")
+                    fila_mensagens.put(("SEND_CHAT", f"{remetente}: {texto_limpo}"))
                 else:
                     texto_limpo = descriptografar(payload)
-                    print(f"\n[CHAT] {texto_limpo}")
+                    fila_mensagens.put(("SEND_CHAT", texto_limpo))
 
             elif comando == "SYNC_STATUS":
-                print(f"\n[SISTEMA] {payload}")
+                fila_mensagens.put(("SYNC_STATUS", payload))
 
             else:
                 # Comandos de background, como a resposta do AUTH_CONN ou ECHO
-                pass
+                fila_mensagens.put((comando, payload))
             
     except ConnectionResetError:
         print("\n[ERRO] O servidor foi desconectado abruptamente.", flush=True)
