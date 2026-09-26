@@ -60,9 +60,23 @@ def lidar_com_cliente(conexao, endereco):
         comando, payload = interpretar_mensagem(texto_decodificado)
 
         if comando == "AUTH_CONN":
-            nickname = payload
-            clientes_online[conexao] = {"nome": nickname, "ultimo_sinal": time.time()}
-            print(f"[LOGIN] Usuário '{nickname}' entrou no lobby.")
+
+            partes = payload.split(" ")
+            nickname = partes[0]
+            porta_udp_local = None
+
+            if len(partes) > 1:
+                try:
+                    porta_udp_local = int(partes[1])
+                except ValueError:
+                    print(f"[SERVIDOR] Porta UDP inválida recebida de {ip_cliente}:{porta_cliente}")
+
+            clientes_online[conexao] = {
+                "nome": nickname, 
+                "ultimo_sinal": time.time(),
+                "porta_udp": porta_udp_local }
+            
+            print(f"[LOGIN] Usuário '{nickname}' entrou no lobby (UDP: {porta_udp_local}).")
             conexao.sendall(formatar_mensagem("AUTH_REPLY", "OK"))
 
         while True:
