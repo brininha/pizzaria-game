@@ -11,9 +11,11 @@ Muito legal.
 '''
 
 import os
+import socket
 import threading
 import time
 from cliente.rede import conectar_servidor
+from config import HOST 
 from utils.protocolo import *
 from utils.seguranca import criptografar, descriptografar
 
@@ -74,10 +76,16 @@ def enviar_heartbeat(client_socket):
 
 def main():
     client_socket = conectar_servidor()
-    
+
+    #Instancia o socket UDP e associa a uma porta livre (0)
+    socket_udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    socket_udp.bind((HOST, 0)) 
+    porta_udp_local = socket_udp.getsockname()[1]
+
     try:
         nickname = input("Digite seu nickname: ")
-        nickname_formatado = formatar_mensagem("AUTH_CONN", nickname)
+        payload_auth = f"{nickname}:{porta_udp_local}"
+        nickname_formatado = formatar_mensagem("AUTH_CONN", payload_auth)
         client_socket.sendall(nickname_formatado)
         
         # isso aqui podera rodar em paralelo ao codigo principal
