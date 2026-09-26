@@ -11,19 +11,21 @@ Muito legal.
 '''
 
 import os
+import socket
 import threading
 import time
 from cliente.rede import conectar_servidor
+from config import HOST 
 from utils.protocolo import *
 from utils.seguranca import criptografar, descriptografar
 
 # funcao isolada para recepcao de dados
-def escutar_servidor(client_socket):
+def escutar_servidor(cliente_socket):
     try:
         # laço infinito pra ficar escutando
         while True:
             # trava a execucao aguardando pacotes do servidor
-            dados = client_socket.recv(1024)
+            dados = cliente_socket.recv(1024)
             
             # se dados vier vazio, o servidor encerrou a conexao
             if not dados:
@@ -58,36 +60,42 @@ def escutar_servidor(client_socket):
     except Exception as e:
         print(f"\n[ERRO] Falha na recepção: {e}", flush=True)
     finally:
-        client_socket.close()
+        cliente_socket.close()
         os._exit(0)  # Encerra o programa imediatamente, mesmo que outras threads estejam rodando
 
 # funcao para enviar o pulso (keep-alive)
-def enviar_heartbeat(client_socket):
+def enviar_heartbeat(cliente_socket):
     try:
         while True:
             time.sleep(5) # pausa de 5 segundos
             mensagem = formatar_mensagem("DEAD_TRIG", "")
-            client_socket.sendall(mensagem)
+            cliente_socket.sendall(mensagem)
     except Exception:
         # se a conexao cair, a thread morre silenciosamente
         pass
 
 def main():
-    client_socket = conectar_servidor()
-    
+    cliente_socket = conectar_servidor()
+
+    #Instancia o socket UDP e associa a uma porta livre (0)
+    socket_udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    socket_udp.bind((HOST, 0)) 
+    porta_udp_local = socket_udp.getsockname()[1]
+
     try:
         nickname = input("Digite seu nickname: ")
-        nickname_formatado = formatar_mensagem("AUTH_CONN", nickname)
-        client_socket.sendall(nickname_formatado)
+        payload_auth = f"{nickname}:{porta_udp_local}"
+        nickname_formatado = formatar_mensagem("AUTH_CONN", payload_auth)
+        cliente_socket.sendall(nickname_formatado)
         
         # isso aqui podera rodar em paralelo ao codigo principal
-        thread_escuta = threading.Thread(target=escutar_servidor, args=(client_socket,))
+        thread_escuta = threading.Thread(target=escutar_servidor, args=(cliente_socket,))
         # isso aqui permite que o programa principal encerre sem esperar por esses processos,
         # eles tambem serao encerrados
         thread_escuta.daemon = True
         thread_escuta.start()
         
-        thread_heartbeat = threading.Thread(target=enviar_heartbeat, args=(client_socket,))
+        thread_heartbeat = threading.Thread(target=enviar_heartbeat, args=(cliente_socket,))
         thread_heartbeat.daemon = True
         thread_heartbeat.start()
         
@@ -100,18 +108,25 @@ def main():
                 # Extrai apenas a cor (o payload) ignorando o "/cor" e formata com o comando "SYNC_STATUS"
                 cor_escolhida = texto_digitado.split(" ", 1)[1]
                 mensagem_formatada = formatar_mensagem("SYNC_STATUS", cor_escolhida)
-                client_socket.sendall(mensagem_formatada)
+                cliente_socket.sendall(mensagem_formatada)
+
+            elif texto_digitado.startswith("/jogar"):
+                # Extrai o nickname do oponente (payload) ignorando o "/jogar"
+                nickname_oponente = texto_digitado.split(" ", 1)[1]
+                mensagem_formatada = formatar_mensagem("REQ_MATCH", nickname_oponente)
+                cliente_socket.sendall(mensagem_formatada)
+                print(f"[SISTEMA] Desafio enviado para {nickname_oponente}...")
             else:
                 # Criptografa o texto antes de enviar
                 texto_cifrado = criptografar(texto_digitado)
                 mensagem_formatada = formatar_mensagem("SEND_CHAT", texto_cifrado)
-                client_socket.sendall(mensagem_formatada)
+                cliente_socket.sendall(mensagem_formatada)
            
         
     except KeyboardInterrupt:
         print("\n[CLIENTE] Encerramento forçado pelo utilizador.")    
     finally:
-        client_socket.close()
+        cliente_socket.close()
         print("[CLIENTE] Conexão encerrada.")
 
 if __name__ == "__main__":
