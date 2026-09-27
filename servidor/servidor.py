@@ -128,6 +128,30 @@ def lidar_com_cliente(conexao, endereco):
                 resposta_bytes = formatar_mensagem("ECHO_REPLY", payload)
                 conexao.sendall(resposta_bytes)
 
+            elif comando == 'REQ_MATCH':
+                nickname_oponente = payload
+                oponente_encontrado = False
+
+                # Procurar o oponente pelo nickname no dicionário de clientes online
+                for socket_cliente, dados_cliente in clientes_online.items():
+                    if dados_cliente["nome"] == nickname_oponente:
+
+                        ip_oponente = socket_cliente.getpeername()[0]
+                        porta_udp_oponente = dados_cliente.get("porta_udp")
+
+                        if porta_udp_oponente:
+
+                            payload_resposta = f"{ip_oponente}:{porta_udp_oponente}"
+                            mensagem_formatada = formatar_mensagem("MATCH_INFO", payload_resposta)
+                            conexao.sendall(mensagem_formatada)
+                            
+                        else:
+                            resposta_bytes = formatar_mensagem("SYNC_STATUS", f"O jogador {nickname_oponente} não tem uma porta UDP válida.")
+                            conexao.sendall(resposta_bytes)
+
+                        oponente_encontrado = True
+                        break    
+
     finally:   
         if conexao in clientes_online:
             nickname = clientes_online[conexao]["nome"] 
