@@ -106,18 +106,16 @@ class PizzariaApp(ctk.CTk):
         if not nickname:
             return
 
-        # ==========================================
-        # CONEXÃO DE REDE (Disparando o AUTH_CONN)
-        # ==========================================
+        # Conexão de rede (disparando o AUTH_CONN)
         try:
-            # 1. Conecta ao servidor 
+            # Conecta ao servidor 
             self.client_socket = conectar_servidor()
             
-            # 2. Envia a autenticação
+            # Envia a autenticação
             mensagem = formatar_mensagem("AUTH_CONN", nickname)
             self.client_socket.sendall(mensagem)
             
-            # 3. Inicia a thread de escuta em background
+            # Inicia a thread de escuta em background
             thread_escuta = threading.Thread(target=escutar_servidor, args=(self.client_socket,))
             thread_escuta.daemon = True
             thread_escuta.start()
@@ -127,8 +125,104 @@ class PizzariaApp(ctk.CTk):
             
         except Exception as e:
             print(f"Falha ao conectar: {e}")
+            
+    def construir_tela_lobby(self):
+        # frame principal que ocupa a tela toda
+        self.frame_lobby = ctk.CTkFrame(self, fg_color="transparent")
+        self.frame_lobby.pack(fill="both", expand=True, padx=20, pady=20)
 
-# Executa a aplicação
+        # painel esquerdo
+        self.frame_esquerdos = ctk.CTkFrame(self.frame_lobby, fg_color="transparent")
+        self.frame_esquerdos.pack(side="left", fill="both", expand=True, padx=(0, 10))
+
+        # titulo do chat
+        ctk.CTkLabel(self.frame_esquerdos, text="💬 Praça de Alimentação", font=("Courier", 24, "bold"), text_color="black").pack(anchor="w", pady=(0, 10))
+
+        # historico do chat
+        self.caixa_chat = ctk.CTkTextbox(
+            self.frame_esquerdos, 
+            font=("Courier", 16),
+            fg_color="white",
+            text_color="black",
+            border_color="#A31D1D",
+            border_width=2,
+            corner_radius=15
+        )
+        self.caixa_chat.pack(fill="both", expand=True, pady=(0, 10))
+        self.caixa_chat.insert("end", "Bem-vindo à Cojura's Pizzaria!\n\n")
+        self.caixa_chat.configure(state="disabled") # Bloqueia digitação direta no histórico
+
+        # rodape do chat
+        self.frame_input_chat = ctk.CTkFrame(self.frame_esquerdos, fg_color="transparent")
+        self.frame_input_chat.pack(fill="x")
+
+        self.entry_chat = ctk.CTkEntry(
+            self.frame_input_chat,
+            placeholder_text="Digite sua mensagem...",
+            font=("Courier", 16),
+            height=40,
+            fg_color="white",
+            text_color="black",
+            border_color="#A31D1D",
+            border_width=2,
+            corner_radius=20
+        )
+        self.entry_chat.pack(side="left", fill="x", expand=True, padx=(0, 10))
+        self.entry_chat.bind("<Return>", self.enviar_chat)
+
+        self.btn_enviar = ctk.CTkButton(
+            self.frame_input_chat,
+            text="Enviar",
+            font=("Courier", 16, "bold"),
+            fg_color="#A31D1D",
+            hover_color="#801515",
+            corner_radius=20,
+            width=100,
+            height=40,
+            command=self.enviar_chat
+        )
+        self.btn_enviar.pack(side="right")
+
+        # painel direito
+        self.frame_direito = ctk.CTkFrame(self.frame_lobby, fg_color="transparent", width=250)
+        self.frame_direito.pack(side="right", fill="y")
+        self.frame_direito.pack_propagate(False) # forçando a largura fixa de 250px
+
+        # titulo lista online
+        ctk.CTkLabel(self.frame_direito, text="👥 Online", font=("Courier", 20, "bold"), text_color="black").pack(anchor="w", pady=(0, 10))
+
+        # lista de jogadores
+        self.lista_jogadores = ctk.CTkScrollableFrame(
+            self.frame_direito,
+            fg_color="white",
+            border_color="#A31D1D",
+            border_width=2,
+            corner_radius=15
+        )
+        self.lista_jogadores.pack(fill="both", expand=True, pady=(0, 20))
+        
+        # titulo vestiario
+        ctk.CTkLabel(self.frame_direito, text="👕 Vestiário", font=("Courier", 20, "bold"), text_color="black").pack(anchor="center", pady=(0, 10))
+
+        # botoes de cores
+        self.frame_cores = ctk.CTkFrame(self.frame_direito, fg_color="transparent")
+        self.frame_cores.pack(pady=(0, 10))
+
+        cores = ["#464646", "#1D3557", "#2A9D8F", "#E76F51"] 
+        for cor in cores:
+            btn_cor = ctk.CTkButton(
+                self.frame_cores,
+                text="",
+                width=30, height=30,
+                corner_radius=15,
+                fg_color=cor,
+                hover_color=cor,
+                # o lambda captura a cor clicada e dispara a mudança pro servidor
+                command=lambda c=cor: self.mudar_cor_avental(c) 
+            )
+            btn_cor.pack(side="left", padx=5)
+
+# executa a aplicacao
 if __name__ == "__main__":
     app = PizzariaApp()
     app.mainloop()
