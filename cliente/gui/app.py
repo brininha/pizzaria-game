@@ -33,10 +33,10 @@ class PizzariaApp(ctk.CTk):
             comando, payload = fila_mensagens.get()
             print(f"[GUI] Processando: {comando}")
             
-            # Nas próximas Issues, faremos os if/elif aqui para atualizar a tela
             if comando == "AUTH_REPLY" and payload == "OK":
-                print("Login autorizado! Indo para o lobby...")
-                # self.construir_tela_lobby()
+                print("[GUI] Login autorizado! Abrindo o lobby...")
+                self.frame_login.destroy() # destroi a tela inicial
+                self.construir_tela_lobby() # desenha a praça de alimentação
                 
         self.after(100, self.verificar_fila)
     
