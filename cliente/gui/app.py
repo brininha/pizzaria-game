@@ -82,15 +82,16 @@ class PizzariaApp(ctk.CTk):
 
         # Gera a imagem da coruja recolorida dinamicamente
         imagem_pil = recolorir_coruja(
-            "cliente/gui/assets/coruja_base.png", 
+            "cliente/gui/assets/coruja_vestida.png", 
             cor_corpo="#D19C74",
-            cor_avental="#464646",
-            cor_bolso="#303030",
-            cor_olhos="#79431A"
+            cor_chapeu="#FFFFFF",
+            cor_avental="#FFFFFF",
+            cor_bolso="#CFCFCF",
+            cor_olhos="#D7C9B2"
         )
         
         # Converte a imagem Pillow para o formato nativo do CustomTkinter
-        owl_image = ctk.CTkImage(light_image=imagem_pil, size=(72, 100))
+        owl_image = ctk.CTkImage(light_image=imagem_pil, size=(97, 163))
         
         self.lbl_coruja = ctk.CTkLabel(self.frame_login, image=owl_image, text="")
         
@@ -228,7 +229,7 @@ class PizzariaApp(ctk.CTk):
         self.frame_cores = ctk.CTkFrame(self.frame_direito, fg_color="transparent")
         self.frame_cores.pack(pady=(0, 10))
 
-        cores = ["#464646", "#1D3557", "#2A9D8F", "#E76F51"] 
+        cores = ["#B1FFB7", "#FFFEC0", "#FFBDF2", "#A7B8FF"] 
         for cor in cores:
             btn_cor = ctk.CTkButton(
                 self.frame_cores,
@@ -300,20 +301,35 @@ class PizzariaApp(ctk.CTk):
             self.desenhar_lista_jogadores()
 
     def desenhar_lista_jogadores(self):
-        # Limpa todos os itens atuais da tela
+        # limpa todos os itens atuais da tela
         for widget in self.lista_jogadores.winfo_children():
             widget.destroy()
             
-        # Recria os itens atualizados
+        # recria os itens atualizados
         for nome, cor in self.jogadores_online.items():
             frame_item = ctk.CTkFrame(self.lista_jogadores, fg_color="transparent")
             frame_item.pack(fill="x", pady=5)
             
-            # Por enquanto, usamos um círculo colorido para representar o avatar
-            avatar = ctk.CTkFrame(frame_item, width=20, height=20, corner_radius=10, fg_color=cor)
+            # gera a miniatura dinamica passando a cor do dicionario para a imagem do avatar
+            imagem_pil = recolorir_coruja(
+                "cliente/gui/assets/coruja_vestida.png", 
+                cor_corpo="#D19C74",
+                cor_chapeu="#FFFFFF",
+                cor_avental=cor,     # a cor que o jogador selecionou!
+                cor_bolso=cor,
+                cor_olhos="#79431A"
+            )
+            
+            # Converte e ajusta o tamanho para caber na lista (ex: 30x40)
+            ctk_img = ctk.CTkImage(light_image=imagem_pil, size=(30, 42))
+            
+            avatar = ctk.CTkLabel(frame_item, image=ctk_img, text="")
             avatar.pack(side="left", padx=(5, 10))
             
-            lbl_nome = ctk.CTkLabel(frame_item, text=nome, font=("Courier", 14, "bold"), text_color="black")
+            # Destaca o próprio jogador com "(Você)"
+            texto_exibicao = f"{nome} (você)" if nome == self.meu_nickname else nome
+            
+            lbl_nome = ctk.CTkLabel(frame_item, text=texto_exibicao, font=("Courier", 14, "bold"), text_color="black")
             lbl_nome.pack(side="left")
 
 # executa a aplicacao

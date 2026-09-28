@@ -4,10 +4,11 @@ def hex_para_rgb(hex_str):
     hex_str = hex_str.lstrip('#')
     return tuple(int(hex_str[i:i+2], 16) for i in (0, 2, 4))
 
-def recolorir_coruja(caminho_base, cor_corpo="#b4b4b4", cor_avental="#464646", cor_bolso="#303030", cor_olhos="#8f8f8f"):
+def recolorir_coruja(caminho_base, cor_corpo="#b4b4b4", cor_chapeu="#292929", cor_avental="#464646", cor_bolso="#303030", cor_olhos="#8f8f8f"):
     # Mapeamento estrito da paleta de cinza que você definiu para novas cores
     mapa_cores = {
         hex_para_rgb("b4b4b4"): hex_para_rgb(cor_corpo),
+        hex_para_rgb("292929"): hex_para_rgb(cor_chapeu),
         hex_para_rgb("464646"): hex_para_rgb(cor_avental),
         hex_para_rgb("303030"): hex_para_rgb(cor_bolso),
         hex_para_rgb("8f8f8f"): hex_para_rgb(cor_olhos)
