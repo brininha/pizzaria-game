@@ -22,47 +22,48 @@ fila_mensagens = queue.Queue()
 
 # funcao isolada para recepcao de dados
 def escutar_servidor(client_socket):
+    buffer = "" # O acumulador de mensagens TCP
     try:
-        # laço infinito pra ficar escutando
         while True:
-            # trava a execucao aguardando pacotes do servidor
             dados = client_socket.recv(1024)
-            
-            # se dados vier vazio, o servidor encerrou a conexao
             if not dados:
                 print("\n[CLIENTE] Conexão com o servidor encerrada.")
                 break
                 
-            # decodifica e separa o comando do payload
-            texto_decodificado = dados.decode('utf-8')
-            comando, payload = interpretar_mensagem(texto_decodificado)
-
-            # Intérprete do cliente
-            if comando == "SEND_CHAT":
-                # O servidor envia no formato "Remetente: texto_cifrado"
-                # Precisamos separar para não descriptografar o nome do remetente
-                if ": " in payload:
-                    remetente, texto_cifrado = payload.split(": ", 1)
-                    texto_limpo = descriptografar(texto_cifrado)
-                    fila_mensagens.put(("SEND_CHAT", f"{remetente}: {texto_limpo}"))
-                else:
-                    texto_limpo = descriptografar(payload)
-                    fila_mensagens.put(("SEND_CHAT", texto_limpo))
-
-            elif comando == "SYNC_STATUS":
-                fila_mensagens.put(("SYNC_STATUS", payload))
-
-            else:
-                # Comandos de background, como a resposta do AUTH_CONN ou ECHO
-                fila_mensagens.put((comando, payload))
+            # Acumula os bytes recebidos convertendo para string
+            buffer += dados.decode('utf-8')
             
+            # Enquanto houver quebras de linha completas no buffer, processa uma a uma!
+            while '\n' in buffer:
+                # Corta a primeira linha e guarda o resto colado de volta no buffer
+                texto_linha, buffer = buffer.split('\n', 1)
+                
+                if not texto_linha.strip():
+                    continue
+                    
+                # Interpreta apenas a linha cortada perfeitamente
+                comando, payload = interpretar_mensagem(texto_linha)
+
+                if comando == "SEND_CHAT":
+                    if ": " in payload:
+                        remetente, texto_cifrado = payload.split(": ", 1)
+                        texto_limpo = descriptografar(texto_cifrado)
+                        fila_mensagens.put(("SEND_CHAT", f"{remetente}: {texto_limpo}"))
+                    else:
+                        fila_mensagens.put(("SEND_CHAT", payload))
+                        
+                elif comando == "SYNC_STATUS":
+                    fila_mensagens.put(("SYNC_STATUS", payload))
+                    
+                else:
+                    fila_mensagens.put((comando, payload))
+                    
     except ConnectionResetError:
         print("\n[ERRO] O servidor foi desconectado abruptamente.", flush=True)
     except Exception as e:
         print(f"\n[ERRO] Falha na recepção: {e}", flush=True)
     finally:
         client_socket.close()
-        os._exit(0)  # Encerra o programa imediatamente, mesmo que outras threads estejam rodando
 
 # funcao para enviar o pulso (keep-alive)
 def enviar_heartbeat(client_socket):
