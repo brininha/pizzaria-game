@@ -61,7 +61,7 @@ def lidar_com_cliente(conexao, endereco):
 
         if comando == "AUTH_CONN":
 
-            partes = payload.split(" ")
+            partes = payload.split(":")
             nickname = partes[0]
             porta_udp_local = None
 
