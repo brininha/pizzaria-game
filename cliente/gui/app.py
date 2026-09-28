@@ -36,8 +36,12 @@ class PizzariaApp(ctk.CTk):
             
             if comando == "AUTH_REPLY" and payload == "OK":
                 print("[GUI] Login autorizado! Abrindo o lobby...")
+                
                 self.frame_login.destroy()
                 self.construir_tela_lobby()
+                
+                self.jogadores_online[self.meu_nickname] = "#464646" 
+                self.desenhar_lista_jogadores()
                 
             elif comando == "SEND_CHAT":
                 # Mostra a mensagem na tela de chat
@@ -114,6 +118,8 @@ class PizzariaApp(ctk.CTk):
         nickname = self.entry_nickname.get().strip()
         if not nickname:
             return
+        
+        self.meu_nickname = nickname
 
         # Conexão de rede (disparando o AUTH_CONN)
         try:
@@ -270,7 +276,7 @@ class PizzariaApp(ctk.CTk):
             self.jogadores_online[nome] = "#464646" # Cor padrão (cinza)
         
         elif "_saiu" in payload:
-            nome = payload.replace("_saiu", "").strip()
+            nome = payload.replace(" saiu", "").strip()
             if nome in self.jogadores_online:
                 del self.jogadores_online[nome]
                 

@@ -63,7 +63,15 @@ def lidar_com_cliente(conexao, endereco):
             nickname = payload
             clientes_online[conexao] = {"nome": nickname, "ultimo_sinal": time.time()}
             print(f"[LOGIN] Usuário '{nickname}' entrou no lobby.")
+            
             conexao.sendall(formatar_mensagem("AUTH_REPLY", "OK"))
+            
+            for socket_antigo, dados in clientes_online.items():
+                if socket_antigo != conexao:
+                    nome_antigo = dados["nome"]
+                    conexao.sendall(formatar_mensagem("SYNC_STATUS", f"{nome_antigo}_entrou"))
+            
+            fazer_broadcast(formatar_mensagem("SYNC_STATUS", f"{nickname}_entrou"), remetente_ignorado=conexao)
 
         while True:
             # Tenta receber os dados, lidando com interrupções abruptas
