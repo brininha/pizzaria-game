@@ -49,7 +49,6 @@ class PizzariaApp(ctk.CTk):
         self.frame_titulo = ctk.CTkFrame(self.frame_login, fg_color="transparent")
         self.frame_titulo.pack(pady=(0, 40))
 
-        # Apenas o texto (sem o emoji)
         self.lbl_texto_titulo = ctk.CTkLabel(
             self.frame_titulo, 
             text="Cojura's Pizzeria", 
@@ -58,10 +57,9 @@ class PizzariaApp(ctk.CTk):
         )
         self.lbl_texto_titulo.pack(side="left")
 
-        # Imagem da pizza (recortada do seu protótipo)
-        # Salve a fatia de pizza como 'pizza.png' com fundo transparente na pasta assets
+        # Imagem da pizza
         img_pizza = Image.open("cliente/gui/assets/pizza.png")
-        ctk_img_pizza = ctk.CTkImage(light_image=img_pizza, size=(40, 40)) # Ajuste o tamanho proporcional ao texto
+        ctk_img_pizza = ctk.CTkImage(light_image=img_pizza, size=(40, 40))
         
         self.lbl_img_pizza = ctk.CTkLabel(self.frame_titulo, image=ctk_img_pizza, text="")
         # side="left" alinha a imagem exatamente à direita do texto
@@ -80,10 +78,10 @@ class PizzariaApp(ctk.CTk):
         owl_image = ctk.CTkImage(light_image=imagem_pil, size=(72, 100))
         
         self.lbl_coruja = ctk.CTkLabel(self.frame_login, image=owl_image, text="")
-        # pady=(0, 0) é o segredo: empurra a coruja exatamente para a borda inferior
+        
         self.lbl_coruja.pack(pady=(0, 0)) 
 
-        # Caixa de texto do Nickname
+        # Caixa de texto do nickname
         self.entry_nickname = ctk.CTkEntry(
             self.frame_login,
             placeholder_text="Insira seu nickname",
@@ -136,7 +134,7 @@ class PizzariaApp(ctk.CTk):
         self.frame_esquerdos.pack(side="left", fill="both", expand=True, padx=(0, 10))
 
         # titulo do chat
-        ctk.CTkLabel(self.frame_esquerdos, text="💬 Praça de Alimentação", font=("Courier", 24, "bold"), text_color="black").pack(anchor="w", pady=(0, 10))
+        ctk.CTkLabel(self.frame_esquerdos, text="💬 Praça de alimentação", font=("Courier", 24, "bold"), text_color="black").pack(anchor="w", pady=(0, 10))
 
         # historico do chat
         self.caixa_chat = ctk.CTkTextbox(
@@ -149,7 +147,7 @@ class PizzariaApp(ctk.CTk):
             corner_radius=15
         )
         self.caixa_chat.pack(fill="both", expand=True, pady=(0, 10))
-        self.caixa_chat.insert("end", "Bem-vindo à Cojura's Pizzaria!\n\n")
+        self.caixa_chat.insert("end", "Bem-vindo à Cojura's Pizzeria!\n\n")
         self.caixa_chat.configure(state="disabled") # Bloqueia digitação direta no histórico
 
         # rodape do chat
@@ -221,6 +219,32 @@ class PizzariaApp(ctk.CTk):
                 command=lambda c=cor: self.mudar_cor_avental(c) 
             )
             btn_cor.pack(side="left", padx=5)
+            
+    def enviar_chat(self, event=None):
+        texto = self.entry_chat.get().strip()
+        if not texto:
+            return
+            
+        # limpa a caixa de digitação
+        self.entry_chat.delete(0, "end")
+        
+        # atualiza a própria tela
+        self.caixa_chat.configure(state="normal")
+        self.caixa_chat.insert("end", f"Você: {texto}\n")
+        self.caixa_chat.see("end") # rola para o fim
+        self.caixa_chat.configure(state="disabled")
+
+        # criptografa e envia pela rede
+        # from utils.seguranca import criptografar
+        # texto_cifrado = criptografar(texto)
+        mensagem_formatada = formatar_mensagem("SEND_CHAT", texto) # Troque para texto_cifrado depois!
+        self.client_socket.sendall(mensagem_formatada)
+
+    def mudar_cor_avental(self, cor_hex):
+        print(f"[GUI] Mudando cor do avental para: {cor_hex}")
+        # Envia o SYNC_STATUS para o servidor avisando que a coruja mudou
+        mensagem = formatar_mensagem("SYNC_STATUS", cor_hex)
+        self.client_socket.sendall(mensagem)
 
 # executa a aplicacao
 if __name__ == "__main__":
