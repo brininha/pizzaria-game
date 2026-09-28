@@ -18,6 +18,7 @@ class PizzariaApp(ctk.CTk):
         
         # Conexão de rede (inicia vazia)
         self.client_socket = None
+        self.jogadores_online = {}
         
         # Carrega a fonte customizada (se baixada), ou usa Courier provisoriamente
         self.fonte_pixel = ("Courier", 24, "bold") 
@@ -31,12 +32,21 @@ class PizzariaApp(ctk.CTk):
     def verificar_fila(self):
         while not fila_mensagens.empty():
             comando, payload = fila_mensagens.get()
-            print(f"[GUI] Processando: {comando}")
             
             if comando == "AUTH_REPLY" and payload == "OK":
                 print("[GUI] Login autorizado! Abrindo o lobby...")
-                self.frame_login.destroy() # destroi a tela inicial
-                self.construir_tela_lobby() # desenha a praça de alimentação
+                self.frame_login.destroy()
+                self.construir_tela_lobby()
+                
+            elif comando == "SEND_CHAT":
+                # Mostra a mensagem na tela de chat
+                self.caixa_chat.configure(state="normal")
+                self.caixa_chat.insert("end", f"{payload}\n")
+                self.caixa_chat.see("end")
+                self.caixa_chat.configure(state="disabled")
+                
+            elif comando == "SYNC_STATUS":
+                self.processar_sync_status(payload)
                 
         self.after(100, self.verificar_fila)
     
