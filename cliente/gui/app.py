@@ -4,6 +4,7 @@ import threading
 from cliente.main_gui import conectar_servidor, escutar_servidor, fila_mensagens
 from utils.protocolo import formatar_mensagem
 from cliente.gui.imagem import recolorir_coruja
+from utils.seguranca import criptografar
 
 # Configurações globais do CustomTkinter
 ctk.set_appearance_mode("light") 
@@ -245,9 +246,8 @@ class PizzariaApp(ctk.CTk):
         self.caixa_chat.configure(state="disabled")
 
         # criptografa e envia pela rede
-        # from utils.seguranca import criptografar
-        # texto_cifrado = criptografar(texto)
-        mensagem_formatada = formatar_mensagem("SEND_CHAT", texto) # Troque para texto_cifrado depois!
+        texto_cifrado = criptografar(texto)
+        mensagem_formatada = formatar_mensagem("SEND_CHAT", texto_cifrado) # Troque para texto_cifrado depois!
         self.client_socket.sendall(mensagem_formatada)
 
     def mudar_cor_avental(self, cor_hex):
@@ -255,6 +255,52 @@ class PizzariaApp(ctk.CTk):
         # Envia o SYNC_STATUS para o servidor avisando que a coruja mudou
         mensagem = formatar_mensagem("SYNC_STATUS", cor_hex)
         self.client_socket.sendall(mensagem)
+        
+    def processar_sync_status(self, payload):
+        # Mostra o aviso do sistema no chat
+        if hasattr(self, 'caixa_chat'):
+            self.caixa_chat.configure(state="normal")
+            self.caixa_chat.insert("end", f"[SISTEMA] {payload}\n")
+            self.caixa_chat.see("end")
+            self.caixa_chat.configure(state="disabled")
+            
+        # Atualiza o dicionário de jogadores
+        if " entrou" in payload:
+            nome = payload.replace(" entrou", "").strip()
+            self.jogadores_online[nome] = "#464646" # Cor padrão (cinza)
+        
+        elif "_saiu" in payload:
+            nome = payload.replace("_saiu", "").strip()
+            if nome in self.jogadores_online:
+                del self.jogadores_online[nome]
+                
+        elif " mudou para " in payload:
+            partes = payload.split(" mudou para ")
+            nome = partes[0].strip()
+            cor_hex = partes[1].strip()
+            if nome in self.jogadores_online:
+                self.jogadores_online[nome] = cor_hex
+
+        # Redesenha a lista lateral apenas se o lobby já estiver aberto
+        if hasattr(self, 'lista_jogadores'):
+            self.desenhar_lista_jogadores()
+
+    def desenhar_lista_jogadores(self):
+        # Limpa todos os itens atuais da tela
+        for widget in self.lista_jogadores.winfo_children():
+            widget.destroy()
+            
+        # Recria os itens atualizados
+        for nome, cor in self.jogadores_online.items():
+            frame_item = ctk.CTkFrame(self.lista_jogadores, fg_color="transparent")
+            frame_item.pack(fill="x", pady=5)
+            
+            # Por enquanto, usamos um círculo colorido para representar o avatar
+            avatar = ctk.CTkFrame(frame_item, width=20, height=20, corner_radius=10, fg_color=cor)
+            avatar.pack(side="left", padx=(5, 10))
+            
+            lbl_nome = ctk.CTkLabel(frame_item, text=nome, font=("Courier", 14, "bold"), text_color="black")
+            lbl_nome.pack(side="left")
 
 # executa a aplicacao
 if __name__ == "__main__":
