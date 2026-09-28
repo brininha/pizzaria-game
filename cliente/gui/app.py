@@ -1,7 +1,7 @@
 import customtkinter as ctk
 from PIL import Image
 import threading
-from cliente.main_gui import conectar_servidor, escutar_servidor, fila_mensagens
+from cliente.main_gui import conectar_servidor, escutar_servidor, fila_mensagens, enviar_heartbeat
 from utils.protocolo import formatar_mensagem
 from cliente.gui.imagem import recolorir_coruja
 from utils.seguranca import criptografar
@@ -134,6 +134,11 @@ class PizzariaApp(ctk.CTk):
             thread_escuta = threading.Thread(target=escutar_servidor, args=(self.client_socket,))
             thread_escuta.daemon = True
             thread_escuta.start()
+            
+            # Inicia a thread de heartbeat para impedir a queda
+            thread_heartbeat = threading.Thread(target=enviar_heartbeat, args=(self.client_socket,))
+            thread_heartbeat.daemon = True
+            thread_heartbeat.start()
             
             # Desativa o input para evitar múltiplos envios
             self.entry_nickname.configure(state="disabled")
@@ -275,7 +280,7 @@ class PizzariaApp(ctk.CTk):
             nome = payload.replace(" entrou", "").strip()
             self.jogadores_online[nome] = "#464646" # Cor padrão (cinza)
         
-        elif "_saiu" in payload:
+        elif " saiu" in payload:
             nome = payload.replace(" saiu", "").strip()
             if nome in self.jogadores_online:
                 del self.jogadores_online[nome]

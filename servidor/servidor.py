@@ -69,9 +69,9 @@ def lidar_com_cliente(conexao, endereco):
             for socket_antigo, dados in clientes_online.items():
                 if socket_antigo != conexao:
                     nome_antigo = dados["nome"]
-                    conexao.sendall(formatar_mensagem("SYNC_STATUS", f"{nome_antigo}_entrou"))
+                    conexao.sendall(formatar_mensagem("SYNC_STATUS", f"{nome_antigo} entrou"))
             
-            fazer_broadcast(formatar_mensagem("SYNC_STATUS", f"{nickname}_entrou"), remetente_ignorado=conexao)
+            fazer_broadcast(formatar_mensagem("SYNC_STATUS", f"{nickname} entrou"), remetente_ignorado=conexao)
 
         while True:
             # Tenta receber os dados, lidando com interrupções abruptas
@@ -129,7 +129,7 @@ def lidar_com_cliente(conexao, endereco):
             print(f"[SERVIDOR] {nickname} saiu do lobby.")
 
             # Broadcast de saída (avisa os restantes)
-            msg_broadcast = formatar_mensagem("SYNC_STATUS", f"{nickname}_saiu")
+            msg_broadcast = formatar_mensagem("SYNC_STATUS", f"{nickname} saiu")
             fazer_broadcast(msg_broadcast)
         
         # Garante que o socket específico deste cliente seja fechado sem quebrar o servidor
