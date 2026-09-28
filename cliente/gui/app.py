@@ -263,6 +263,9 @@ class PizzariaApp(ctk.CTk):
 
     def mudar_cor_avental(self, cor_hex):
         print(f"[GUI] Mudando cor do avental para: {cor_hex}")
+        
+        self.jogadores_online[self.meu_nickname] = cor_hex
+        self.desenhar_lista_jogadores()
         # Envia o SYNC_STATUS para o servidor avisando que a coruja mudou
         mensagem = formatar_mensagem("SYNC_STATUS", cor_hex)
         self.client_socket.sendall(mensagem)
