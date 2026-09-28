@@ -60,7 +60,7 @@ def lidar_com_cliente(conexao, endereco):
         comando, payload = interpretar_mensagem(texto_decodificado)
 
         if comando == "AUTH_CONN":
-
+            # separa o nickname da porta UDP
             partes = payload.split(":")
             nickname = partes[0]
             porta_udp_local = None
@@ -71,22 +71,34 @@ def lidar_com_cliente(conexao, endereco):
                 except ValueError:
                     print(f"[SERVIDOR] Porta UDP inválida recebida de {ip_cliente}:{porta_cliente}")
 
+            # salva no dicionário uma unica vez com todas as infos
             clientes_online[conexao] = {
                 "nome": nickname, 
                 "ultimo_sinal": time.time(),
-                "porta_udp": porta_udp_local }
+                "porta_udp": porta_udp_local 
+            }
             
             print(f"[LOGIN] Usuário '{nickname}' entrou no lobby (UDP: {porta_udp_local}).")
+            
+            # autoriza a entrada
             conexao.sendall(formatar_mensagem("AUTH_REPLY", "OK"))
+            
+            # sincroniza a lista de contatos
+            for socket_antigo, dados in clientes_online.items():
+                if socket_antigo != conexao:
+                    nome_antigo = dados["nome"]
+                    conexao.sendall(formatar_mensagem("SYNC_STATUS", f"{nome_antigo} entrou"))
+            
+            fazer_broadcast(formatar_mensagem("SYNC_STATUS", f"{nickname} entrou"), remetente_ignorado=conexao)
 
         while True:
-            # Tenta receber os dados, lidando com interrupções abruptas
+            # tenta receber os dados, lidando com interrupções abruptas
             try:
                 dados = conexao.recv(1024)
             except ConnectionResetError:
-                break # Sai do loop se a conexão for forçadamente resetada
+                break # sai do loop se a conexão for forçadamente resetada
             
-            # Se recv() retornar zero bytes, o cliente encerrou a conexão de forma limpa
+            # se recv() retornar zero bytes, o cliente encerrou a conexão de forma limpa
             if not dados:
                 break
             
@@ -159,7 +171,7 @@ def lidar_com_cliente(conexao, endereco):
             print(f"[SERVIDOR] {nickname} saiu do lobby.")
 
             # Broadcast de saída (avisa os restantes)
-            msg_broadcast = formatar_mensagem("SYNC_STATUS", f"{nickname}_saiu")
+            msg_broadcast = formatar_mensagem("SYNC_STATUS", f"{nickname} saiu")
             fazer_broadcast(msg_broadcast)
         
         # Garante que o socket específico deste cliente seja fechado sem quebrar o servidor
