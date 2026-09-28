@@ -60,12 +60,30 @@ def lidar_com_cliente(conexao, endereco):
         comando, payload = interpretar_mensagem(texto_decodificado)
 
         if comando == "AUTH_CONN":
-            nickname = payload
-            clientes_online[conexao] = {"nome": nickname, "ultimo_sinal": time.time()}
-            print(f"[LOGIN] Usuário '{nickname}' entrou no lobby.")
+            # separa o nickname da porta UDP
+            partes = payload.split(":")
+            nickname = partes[0]
+            porta_udp_local = None
+
+            if len(partes) > 1:
+                try:
+                    porta_udp_local = int(partes[1])
+                except ValueError:
+                    print(f"[SERVIDOR] Porta UDP inválida recebida de {ip_cliente}:{porta_cliente}")
+
+            # salva no dicionário uma unica vez com todas as infos
+            clientes_online[conexao] = {
+                "nome": nickname, 
+                "ultimo_sinal": time.time(),
+                "porta_udp": porta_udp_local 
+            }
             
+            print(f"[LOGIN] Usuário '{nickname}' entrou no lobby (UDP: {porta_udp_local}).")
+            
+            # autoriza a entrada
             conexao.sendall(formatar_mensagem("AUTH_REPLY", "OK"))
             
+            # sincroniza a lista de contatos
             for socket_antigo, dados in clientes_online.items():
                 if socket_antigo != conexao:
                     nome_antigo = dados["nome"]
@@ -74,13 +92,13 @@ def lidar_com_cliente(conexao, endereco):
             fazer_broadcast(formatar_mensagem("SYNC_STATUS", f"{nickname} entrou"), remetente_ignorado=conexao)
 
         while True:
-            # Tenta receber os dados, lidando com interrupções abruptas
+            # tenta receber os dados, lidando com interrupções abruptas
             try:
                 dados = conexao.recv(1024)
             except ConnectionResetError:
-                break # Sai do loop se a conexão for forçadamente resetada
+                break # sai do loop se a conexão for forçadamente resetada
             
-            # Se recv() retornar zero bytes, o cliente encerrou a conexão de forma limpa
+            # se recv() retornar zero bytes, o cliente encerrou a conexão de forma limpa
             if not dados:
                 break
             
@@ -121,6 +139,30 @@ def lidar_com_cliente(conexao, endereco):
             elif comando == 'ECHO':
                 resposta_bytes = formatar_mensagem("ECHO_REPLY", payload)
                 conexao.sendall(resposta_bytes)
+
+            elif comando == 'REQ_MATCH':
+                nickname_oponente = payload
+                oponente_encontrado = False
+
+                # Procurar o oponente pelo nickname no dicionário de clientes online
+                for socket_cliente, dados_cliente in clientes_online.items():
+                    if dados_cliente["nome"] == nickname_oponente:
+
+                        ip_oponente = socket_cliente.getpeername()[0]
+                        porta_udp_oponente = dados_cliente.get("porta_udp")
+
+                        if porta_udp_oponente:
+
+                            payload_resposta = f"{ip_oponente}:{porta_udp_oponente}"
+                            mensagem_formatada = formatar_mensagem("MATCH_INFO", payload_resposta)
+                            conexao.sendall(mensagem_formatada)
+                            
+                        else:
+                            resposta_bytes = formatar_mensagem("SYNC_STATUS", f"O jogador {nickname_oponente} não tem uma porta UDP válida.")
+                            conexao.sendall(resposta_bytes)
+
+                        oponente_encontrado = True
+                        break    
 
     finally:   
         if conexao in clientes_online:
