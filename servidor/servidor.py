@@ -75,7 +75,8 @@ def lidar_com_cliente(conexao, endereco):
             clientes_online[conexao] = {
                 "nome": nickname, 
                 "ultimo_sinal": time.time(),
-                "porta_udp": porta_udp_local 
+                "porta_udp": porta_udp_local,
+                "status": "disponivel" 
             }
             
             print(f"[LOGIN] Usuário '{nickname}' entrou no lobby (UDP: {porta_udp_local}).")
@@ -147,22 +148,49 @@ def lidar_com_cliente(conexao, endereco):
                 # Procurar o oponente pelo nickname no dicionário de clientes online
                 for socket_cliente, dados_cliente in clientes_online.items():
                     if dados_cliente["nome"] == nickname_oponente:
-
-                        ip_oponente = socket_cliente.getpeername()[0]
-                        porta_udp_oponente = dados_cliente.get("porta_udp")
-
-                        if porta_udp_oponente:
-
-                            payload_resposta = f"{ip_oponente}:{porta_udp_oponente}"
-                            mensagem_formatada = formatar_mensagem("MATCH_INFO", payload_resposta)
-                            conexao.sendall(mensagem_formatada)
-                            
-                        else:
-                            resposta_bytes = formatar_mensagem("SYNC_STATUS", f"O jogador {nickname_oponente} não tem uma porta UDP válida.")
-                            conexao.sendall(resposta_bytes)
-
                         oponente_encontrado = True
-                        break    
+                        if dados_cliente.get("status") != "disponivel":
+                            resposta_bytes = formatar_mensagem("MATCH_REJECT", "Ocupado")
+                            conexao.sendall(resposta_bytes)
+                        else:
+                            socket_cliente.sendall(formatar_mensagem("CHALLENGE_INVITE", nickname))
+                        break 
+
+                if not oponente_encontrado:
+                    resposta_bytes = formatar_mensagem("MATCH_REJECT", "Oponente offline")
+                    conexao.sendall(resposta_bytes)  
+
+            elif comando == 'ACCEPT_MATCH':
+                nickname_oponente = payload
+                socket_oponente = None
+
+                for socket_cliente, dados_cliente in clientes_online.items():
+                    if dados_cliente["nome"] == nickname_oponente:
+                        socket_oponente = socket_cliente
+                        break
+
+                if socket_oponente:
+                   clientes_online[conexao]["status"] = "jogando"
+                   clientes_online[socket_oponente]["status"] = "jogando"
+
+                   fazer_broadcast(formatar_mensagem("SYNC_STATUS", f"{nickname} entrou em partida"))
+                   fazer_broadcast(formatar_mensagem("SYNC_STATUS", f"{nickname_oponente} entrou em partida"))
+                   
+                   ip_recebedor = conexao.getpeername()[0]
+                   porta_recebedor = clientes_online[conexao]["porta_udp"]
+                   ip_oponente = socket_oponente.getpeername()[0]
+                   porta_oponente = clientes_online[socket_oponente]["porta_udp"]
+
+                   # Entrega o IP/Porta cruzados
+                   socket_oponente.sendall(formatar_mensagem("MATCH_INFO", f"{ip_recebedor}:{porta_recebedor}"))
+                   conexao.sendall(formatar_mensagem("MATCH_INFO", f"{ip_oponente}:{porta_oponente}"))
+            
+            elif comando == 'REJECT_MATCH':
+                nickname_oponente = payload
+                for socket_cliente, dados_cliente in clientes_online.items():
+                    if dados_cliente["nome"] == nickname_oponente:
+                        socket_cliente.sendall(formatar_mensagem("MATCH_REJECT", "Convite recusado"))
+                        break      
 
     finally:   
         if conexao in clientes_online:
