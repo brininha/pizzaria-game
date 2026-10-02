@@ -52,7 +52,17 @@ class PizzariaApp(ctk.CTk):
                 
             elif comando == "SYNC_STATUS":
                 self.processar_sync_status(payload)
-                
+
+            elif comando == "CHALLENGE_INVITE":
+                self.mostrar_convite(payload)
+
+            elif comando == "MATCH_REJECT":
+                self.processar_sync_status(f"Desafio falhou: {payload}")
+
+            elif comando == "MATCH_INFO":
+                self.processar_sync_status("Adversário conectado! Iniciando Pygame...")
+                print(f"[P2P] Iniciar conexão direta com: {payload}")
+
         self.after(100, self.verificar_fila)
     
     def construir_tela_login(self):
@@ -331,6 +341,36 @@ class PizzariaApp(ctk.CTk):
             
             lbl_nome = ctk.CTkLabel(frame_item, text=texto_exibicao, font=("Courier", 14, "bold"), text_color="black")
             lbl_nome.pack(side="left")
+
+    # Função para mostrar o convite de partida        
+    def mostrar_convite(self, desafiante):
+        # Cria uma janela sobreposta para o convite
+        janela_convite = ctk.CTkToplevel(self)
+        janela_convite.title("Novo Desafio!")
+        janela_convite.geometry("300x150")
+        janela_convite.attributes("-topmost", True)
+        
+        lbl_texto = ctk.CTkLabel(janela_convite, text=f"{desafiante} te desafiou!\nAceitar partida?", font=("Courier", 14, "bold"))
+        lbl_texto.pack(pady=20)
+        
+        frame_botoes = ctk.CTkFrame(janela_convite, fg_color="transparent")
+        frame_botoes.pack()
+        
+        def aceitar():
+            mensagem = formatar_mensagem("ACCEPT_MATCH", desafiante)
+            self.client_socket.sendall(mensagem)
+            janela_convite.destroy()
+            
+        def recusar():
+            mensagem = formatar_mensagem("REJECT_MATCH", desafiante)
+            self.client_socket.sendall(mensagem)
+            janela_convite.destroy()
+            
+        btn_sim = ctk.CTkButton(frame_botoes, text="Sim", command=aceitar, width=80, fg_color="green", hover_color="darkgreen")
+        btn_sim.pack(side="left", padx=10)
+        
+        btn_nao = ctk.CTkButton(frame_botoes, text="Não", command=recusar, width=80, fg_color="#A31D1D", hover_color="#801515")
+        btn_nao.pack(side="right", padx=10)
 
 # executa a aplicacao
 if __name__ == "__main__":
