@@ -17,6 +17,7 @@ import time
 from cliente.rede import conectar_servidor
 from utils.protocolo import *
 from utils.seguranca import criptografar, descriptografar
+from config import BUFFER_SIZE, ENCODING
 
 fila_mensagens = queue.Queue()
 
@@ -25,13 +26,13 @@ def escutar_servidor(client_socket):
     buffer = "" # O acumulador de mensagens TCP
     try:
         while True:
-            dados = client_socket.recv(1024)
+            dados = client_socket.recv(BUFFER_SIZE)
             if not dados:
                 print("\n[CLIENTE] Conexão com o servidor encerrada.")
                 break
                 
             # Acumula os bytes recebidos convertendo para string
-            buffer += dados.decode('utf-8')
+            buffer += dados.decode(ENCODING)
             
             # Enquanto houver quebras de linha completas no buffer, processa uma a uma!
             while '\n' in buffer:
@@ -54,7 +55,8 @@ def escutar_servidor(client_socket):
                         
                 elif comando == "SYNC_STATUS":
                     fila_mensagens.put(("SYNC_STATUS", payload))
-                    
+                elif comando in ["CHALLENGE_INVITE","MATCH_REJECT", "MATCH_INFO"]:
+                    fila_mensagens.put((comando, payload))            
                 else:
                     fila_mensagens.put((comando, payload))
                     
