@@ -279,28 +279,50 @@ def iniciar_partida(meu_nickname, oponente_nickname, ip_oponente, porta_oponente
                 
                 x_atual += largura_caixa_cat + 20
         
+        # tela de vitoria / derrota com design de placa de restaurante
         if fim_de_jogo:
-            # cria uma pelicula escura translucida sobre o jogo
+            # mantem a pelicula escura para desfocar o fundo
             pelicula = pygame.Surface((largura, altura))
-            pelicula.set_alpha(200)
+            pelicula.set_alpha(150)
             pelicula.fill(preto)
             tela.blit(pelicula, (0, 0))
 
-            # define a mensagem e a cor com base em quem venceu
+            # desenha a placa central
+            largura_fim = 600
+            altura_fim = 220
+            x_fim = (largura // 2) - (largura_fim // 2)
+            y_fim = (altura // 2) - (altura_fim // 2)
+            
+            # sombra da placa
+            pygame.draw.rect(tela, (50, 50, 50), (x_fim + 8, y_fim + 8, largura_fim, altura_fim), border_radius=15)
+            
+            # fundo da placa cor de papel creme e borda preta
+            cor_fundo_placa = (253, 250, 235)
+            pygame.draw.rect(tela, cor_fundo_placa, (x_fim, y_fim, largura_fim, altura_fim), border_radius=15)
+            pygame.draw.rect(tela, preto, (x_fim, y_fim, largura_fim, altura_fim), width=4, border_radius=15)
+            
+            # define os textos e cores consoante o resultado
             if vencedor == meu_nickname:
-                msg = "VOCÊ VENCEU!"
-                cor_fim = verde
+                titulo_fim = "Excelente trabalho!"
+                subtitulo_fim = "Venceu a corrida das pizzas."
+                cor_destaque = (42, 157, 143) # verde elegante
             else:
-                msg = "VOCÊ PERDEU!"
-                cor_fim = vermelho
+                titulo_fim = "Fim de expediente!"
+                subtitulo_fim = "Perdeu a corrida para o oponente."
+                cor_destaque = (224, 122, 95) # vermelho/laranja elegante
+                
+            texto_titulo = fonte_anuncio.render(titulo_fim, True, cor_destaque)
+            texto_subtitulo = fonte_pixel.render(subtitulo_fim, True, preto)
+            
+            # instrucao de saida menor e em cinza para nao roubar atencao
+            fonte_saida = pygame.font.SysFont("Courier", 16, bold=True)
+            aviso_saida = fonte_saida.render("Pressione [ENTER] para voltar ao lobby", True, (100, 100, 100))
+            
+            # posiciona os textos alinhados ao centro da placa
+            tela.blit(texto_titulo, (largura // 2 - texto_titulo.get_width() // 2, y_fim + 40))
+            tela.blit(texto_subtitulo, (largura // 2 - texto_subtitulo.get_width() // 2, y_fim + 100))
+            tela.blit(aviso_saida, (largura // 2 - aviso_saida.get_width() // 2, y_fim + 170))
 
-            texto_fim = fonte_anuncio.render(msg, True, cor_fim)
-            tela.blit(texto_fim, (largura // 2 - texto_fim.get_width() // 2, altura // 2 - 50))
-
-            aviso_saida = fonte_pixel.render("Pressione [ENTER] para voltar", True, branco)
-            tela.blit(aviso_saida, (largura // 2 - aviso_saida.get_width() // 2, altura // 2 + 50))
-
-            # se apertar enter, quebra o loop e fecha o Pygame
             teclas_pressionadas = pygame.key.get_pressed()
             if teclas_pressionadas[pygame.K_RETURN]:
                 rodando = False
