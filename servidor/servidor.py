@@ -191,6 +191,11 @@ def lidar_com_cliente(conexao, endereco):
                     if dados_cliente["nome"] == nickname_oponente:
                         socket_cliente.sendall(formatar_mensagem("MATCH_REJECT", "Convite recusado"))
                         break      
+                    
+            elif comando == 'BACK_LOBBY':
+                if conexao in clientes_online:
+                    clientes_online[conexao]["status"] = "disponivel"
+                    fazer_broadcast(formatar_mensagem("SYNC_STATUS", f"{nickname} voltou"))
 
     finally:   
         if conexao in clientes_online:

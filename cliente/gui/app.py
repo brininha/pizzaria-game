@@ -302,6 +302,11 @@ class PizzariaApp(ctk.CTk):
         elif " entrou" in payload:
             nome = payload.replace(" entrou", "").strip()
             self.jogadores_online[nome] = {"cor": "#464646", "ocupado": False}
+            
+        elif " voltou" in payload:
+            nome = payload.replace(" voltou", "").strip()
+            if nome in self.jogadores_online:
+                self.jogadores_online[nome]["ocupado"] = False
         
         elif " saiu" in payload:
             nome = payload.replace(" saiu", "").strip()
@@ -331,7 +336,7 @@ class PizzariaApp(ctk.CTk):
             frame_item = ctk.CTkFrame(self.lista_jogadores, fg_color="transparent")
             frame_item.pack(fill="x", pady=5)
             
-            imagem_pil = recolorir_coruja("cliente/gui/assets/coruja_base.png", cor_corpo="#D19C74", cor_avental=cor, cor_bolso="#303030", cor_olhos="#79431A")
+            imagem_pil = recolorir_coruja("cliente/gui/assets/coruja_vestida.png", cor_corpo="#D19C74", cor_chapeu="#FFFFFF", cor_avental=cor, cor_bolso=cor, cor_olhos="#79431A")
             ctk_img = ctk.CTkImage(light_image=imagem_pil, size=(30, 42))
             
             avatar = ctk.CTkLabel(frame_item, image=ctk_img, text="")
@@ -421,6 +426,9 @@ class PizzariaApp(ctk.CTk):
             porta_oponente, 
             self.udp_socket
         )
+        
+        self.deiconify()
+        self.client_socket.sendall(formatar_mensagem("BACK_LOBBY", "OK"))
 
 # executa a aplicacao
 if __name__ == "__main__":
