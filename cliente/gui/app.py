@@ -405,26 +405,27 @@ class PizzariaApp(ctk.CTk):
         btn_nao.pack(side="right", padx=10)
         
     def abrir_cozinha_pygame(self, info_oponente):
-        # esconde a janela do CustomTkinter
         self.withdraw()
         
-        ip_oponente, porta_oponente_str = info_oponente.split(":")
+        # o info_oponente chega do servidor como "192.168.0.5:5050:8472"
+        ip_oponente, porta_oponente_str, semente_str = info_oponente.split(":")
         porta_oponente = int(porta_oponente_str)
+        semente_partida = int(semente_str)
         
-        # mostra um aviso no terminal
         print("\n" + "="*40)
         print("🍕 BEM-VINDO À COZINHA (PYGAME)")
-        print(f"Oponente no endereço: {info_oponente}")
+        print(f"Adversário: {self.oponente_atual} ({ip_oponente}:{porta_oponente})")
         print("="*40 + "\n")
         
-        # chamando o codigo pygame
         import cliente.gui.cozinha as cozinha
+        
         cozinha.iniciar_partida(
             self.meu_nickname, 
             self.oponente_atual, 
             ip_oponente, 
             porta_oponente, 
-            self.udp_socket
+            self.udp_socket,
+            semente_partida
         )
         
         self.deiconify()

@@ -12,6 +12,7 @@ paralelamente.
 
 import socket
 import threading
+import random
 import time
 from config import HOST, PORT
 from utils.protocolo import *
@@ -181,9 +182,12 @@ def lidar_com_cliente(conexao, endereco):
                    ip_oponente = socket_oponente.getpeername()[0]
                    porta_oponente = clientes_online[socket_oponente]["porta_udp"]
 
-                   # Entrega o IP/Porta cruzados
-                   socket_oponente.sendall(formatar_mensagem("MATCH_INFO", f"{ip_recebedor}:{porta_recebedor}"))
-                   conexao.sendall(formatar_mensagem("MATCH_INFO", f"{ip_oponente}:{porta_oponente}"))
+                   # sorteia um numero aleatorio para guiar a fila de pedidos desta partida especifica
+                   semente_partida = random.randint(1000, 9999)
+
+                   # entrega o ip, porta e semente cruzados
+                   socket_oponente.sendall(formatar_mensagem("MATCH_INFO", f"{ip_recebedor}:{porta_recebedor}:{semente_partida}"))
+                   conexao.sendall(formatar_mensagem("MATCH_INFO", f"{ip_oponente}:{porta_oponente}:{semente_partida}"))
             
             elif comando == 'REJECT_MATCH':
                 nickname_oponente = payload
