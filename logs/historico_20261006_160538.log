@@ -1,0 +1,17 @@
+2026-10-06 16:05:38 [servidor] INFO: aguardando conexoes na porta 5050...
+2026-10-06 16:05:58 [servidor] INFO: cliente conectado: 127.0.0.1:38394
+2026-10-06 16:05:58 [servidor] INFO: usuario 'Sabrina' entrou no lobby (udp: 46202)
+2026-10-06 16:06:02 [servidor] INFO: cliente conectado: 127.0.0.1:37434
+2026-10-06 16:06:02 [servidor] INFO: usuario 'Manu' entrou no lobby (udp: 36232)
+2026-10-06 16:06:05 [servidor] INFO: cliente conectado: 127.0.0.1:37436
+2026-10-06 16:06:05 [servidor] INFO: usuario 'Rafa' entrou no lobby (udp: 46256)
+2026-10-06 16:06:14 [servidor] INFO: [Rafa diz no chat]: Rlhhh/#jdohud#=,
+2026-10-06 16:06:23 [servidor] INFO: [Manu diz no chat]: Rl/#Udid/#wxgr#ehpB
+2026-10-06 16:06:28 [servidor] INFO: [Manu diz no chat]: Ydprv#mrjduB
+2026-10-06 16:07:40 [servidor] INFO: [Sabrina diz no chat]: Wfkdxx$
+2026-10-06 16:07:42 [servidor] INFO: Sabrina saiu do lobby
+2026-10-06 16:07:42 [servidor] INFO: conexao encerrada com 127.0.0.1:38394
+2026-10-06 16:07:43 [servidor] INFO: Manu saiu do lobby
+2026-10-06 16:07:43 [servidor] INFO: conexao encerrada com 127.0.0.1:37434
+2026-10-06 16:07:45 [servidor] INFO: Rafa saiu do lobby
+2026-10-06 16:07:45 [servidor] INFO: conexao encerrada com 127.0.0.1:37436
