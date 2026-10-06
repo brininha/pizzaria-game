@@ -1,7 +1,7 @@
 import pygame
 import os 
 
-def iniciar_partida(nickname_jogador, nickename_oponente):
+def iniciar_partida(meu_nickname, oponente_nickname, ip_oponente, porta_oponente, meu_socket_udp):
 
     pygame.init()
 

@@ -364,6 +364,7 @@ class PizzariaApp(ctk.CTk):
 
     def enviar_desafio(self, oponente):
         print(f"[GUI] Enviando convite para {oponente}...")
+        self.oponente_atual = oponente
         mensagem = formatar_mensagem("REQ_MATCH", oponente)
         self.client_socket.sendall(mensagem)
 
@@ -383,6 +384,7 @@ class PizzariaApp(ctk.CTk):
         
         def aceitar():
             mensagem = formatar_mensagem("ACCEPT_MATCH", desafiante)
+            self.oponente_atual = desafiante
             self.client_socket.sendall(mensagem)
             janela_convite.destroy()
             
@@ -401,6 +403,9 @@ class PizzariaApp(ctk.CTk):
         # esconde a janela do CustomTkinter
         self.withdraw()
         
+        ip_oponente, porta_oponente_str = info_oponente.split(":")
+        porta_oponente = int(porta_oponente_str)
+        
         # mostra um aviso no terminal
         print("\n" + "="*40)
         print("🍕 BEM-VINDO À COZINHA (PYGAME)")
@@ -409,7 +414,13 @@ class PizzariaApp(ctk.CTk):
         
         # chamando o codigo pygame
         import cliente.gui.cozinha as cozinha
-        cozinha.iniciar_partida(info_oponente, self.meu_nickname) # conferir se os dados estao sendo passados da maneira certa depois
+        cozinha.iniciar_partida(
+            self.meu_nickname, 
+            self.oponente_atual, 
+            ip_oponente, 
+            porta_oponente, 
+            self.udp_socket
+        )
 
 # executa a aplicacao
 if __name__ == "__main__":
