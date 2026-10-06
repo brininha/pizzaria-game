@@ -28,9 +28,9 @@ def iniciar_partida(nickname_jogador, nickename_oponente):
     img_massa = carregar_dimensionar("massa.png")
 
     molhos = {
-        pygame.K_1: carregar_dimensionar("molho_tomate.png"),
-        pygame.K_2: carregar_dimensionar("molho_pesto.png"),
-        pygame.K_3: carregar_dimensionar("molho_branco.png")
+        pygame.K_1: carregar_dimensionar("molho-de-tomate.png"),
+        pygame.K_2: carregar_dimensionar("molho-pesto.png"),
+        pygame.K_3: carregar_dimensionar("molho-branco.png")
     }
 
     queijos = {
