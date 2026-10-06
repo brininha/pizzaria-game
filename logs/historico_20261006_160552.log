@@ -1,0 +1,18 @@
+2026-10-06 16:06:02 [interface_cliente] INFO: [Manu] login autorizado! abrindo o lobby...
+2026-10-06 16:06:30 [interface_cliente] INFO: [Manu] enviando convite para Rafa...
+2026-10-06 16:06:33 [interface_cliente] INFO: recebido match_info! iniciando p2p com: 127.0.0.1:46256:6343
+2026-10-06 16:06:33 [interface_cliente] INFO: [Manu] bem-vindo a cozinha (pygame)
+2026-10-06 16:06:33 [interface_cliente] INFO: [Manu] adversario: Rafa (127.0.0.1:46256)
+2026-10-06 16:06:33 [cozinha_pygame] INFO: [Manu] partida p2p iniciada contra Rafa (semente: 6343)
+2026-10-06 16:06:40 [cozinha_pygame] INFO: [Manu] pizza 1 montada com sucesso! enviando pontuacao 10 via udp
+2026-10-06 16:06:44 [cozinha_pygame] INFO: [Manu] pizza 2 montada com sucesso! enviando pontuacao 20 via udp
+2026-10-06 16:06:49 [cozinha_pygame] INFO: [Manu] pizza 3 montada com sucesso! enviando pontuacao 30 via udp
+2026-10-06 16:06:53 [cozinha_pygame] INFO: [Manu] pizza 4 montada com sucesso! enviando pontuacao 40 via udp
+2026-10-06 16:06:57 [cozinha_pygame] INFO: [Manu] pizza 5 montada com sucesso! enviando pontuacao 50 via udp
+2026-10-06 16:07:02 [cozinha_pygame] INFO: [Manu] pizza 6 montada com sucesso! enviando pontuacao 60 via udp
+2026-10-06 16:07:04 [cozinha_pygame] INFO: [Manu] pizza 7 montada com sucesso! enviando pontuacao 70 via udp
+2026-10-06 16:07:07 [cozinha_pygame] INFO: [Manu] pizza 8 montada com sucesso! enviando pontuacao 80 via udp
+2026-10-06 16:07:12 [cozinha_pygame] INFO: [Manu] pizza 9 montada com sucesso! enviando pontuacao 90 via udp
+2026-10-06 16:07:18 [cozinha_pygame] INFO: [Manu] pizza 10 montada com sucesso! enviando pontuacao 100 via udp
+2026-10-06 16:07:18 [cozinha_pygame] INFO: [Manu] alcancou 100 pontos e venceu a partida
+2026-10-06 16:07:21 [cozinha_pygame] INFO: [Manu] fechou a janela da cozinha e retornou ao lobby
