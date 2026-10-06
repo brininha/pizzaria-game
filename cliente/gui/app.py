@@ -133,26 +133,27 @@ class PizzariaApp(ctk.CTk):
         
         self.meu_nickname = nickname
 
-        # Conexão de rede (disparando o AUTH_CONN)
+        # conexao de rede (disparando o AUTH_CONN)
         try:
-            # Conecta ao servidor 
+            import socket
+            self.udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            self.udp_socket.bind(("", 0))
+            self.minha_porta_udp = self.udp_socket.getsockname()[1]
+
             self.client_socket = conectar_servidor()
             
-            # Envia a autenticação
-            mensagem = formatar_mensagem("AUTH_CONN", nickname)
+            # agora envia o formato que o servidor da sua colega espera: "Nome:Porta"
+            mensagem = formatar_mensagem("AUTH_CONN", f"{nickname}:{self.minha_porta_udp}")
             self.client_socket.sendall(mensagem)
             
-            # Inicia a thread de escuta em background
             thread_escuta = threading.Thread(target=escutar_servidor, args=(self.client_socket,))
             thread_escuta.daemon = True
             thread_escuta.start()
             
-            # Inicia a thread de heartbeat para impedir a queda
             thread_heartbeat = threading.Thread(target=enviar_heartbeat, args=(self.client_socket,))
             thread_heartbeat.daemon = True
             thread_heartbeat.start()
             
-            # Desativa o input para evitar múltiplos envios
             self.entry_nickname.configure(state="disabled")
             
         except Exception as e:
