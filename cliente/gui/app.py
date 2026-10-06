@@ -5,8 +5,11 @@ from cliente.main_gui import conectar_servidor, escutar_servidor, fila_mensagens
 from utils.protocolo import formatar_mensagem
 from cliente.gui.imagem import recolorir_coruja
 from utils.seguranca import criptografar
+from utils.logger import obter_logger
 
-# Configurações globais do CustomTkinter
+logger = obter_logger("interface_cliente")
+
+# configuracoes globais do customtkinter
 ctk.set_appearance_mode("light") 
 
 class PizzariaApp(ctk.CTk):
@@ -17,17 +20,17 @@ class PizzariaApp(ctk.CTk):
         self.geometry("800x600")
         self.configure(fg_color="#F6F4E8")
         
-        # Conexão de rede (inicia vazia)
+        # conexao de rede (inicia vazia)
         self.client_socket = None
         self.jogadores_online = {}
         
-        # Carrega a fonte customizada (se baixada), ou usa Courier provisoriamente
+        # carrega a fonte customizada (se baixada), ou usa courier provisoriamente
         self.fonte_pixel = ("Courier", 24, "bold") 
         
-        # Inicializa a tela de login
+        # inicializa a tela de login
         self.construir_tela_login()
         
-        # Inicia o motor de verificação da fila
+        # inicia o motor de verificacao da fila
         self.verificar_fila()
 
     def verificar_fila(self):
@@ -35,17 +38,16 @@ class PizzariaApp(ctk.CTk):
             comando, payload = fila_mensagens.get()
             
             if comando == "AUTH_REPLY" and payload == "OK":
-                print("[GUI] Login autorizado! Abrindo o lobby...")
+                logger.info(f"[{self.meu_nickname}] login autorizado! abrindo o lobby...")
                 
                 self.frame_login.destroy()
                 self.construir_tela_lobby()
                 
-                # self.jogadores_online[self.meu_nickname] = "#464646"
                 self.jogadores_online[self.meu_nickname] = {"cor": "#464646", "ocupado": False}
                 self.desenhar_lista_jogadores()
                 
             elif comando == "SEND_CHAT":
-                # Mostra a mensagem na tela de chat
+                # mostra a mensagem na tela de chat
                 self.caixa_chat.configure(state="normal")
                 self.caixa_chat.insert("end", f"{payload}\n")
                 self.caixa_chat.see("end")
@@ -61,17 +63,17 @@ class PizzariaApp(ctk.CTk):
                 self.processar_sync_status(f"Desafio falhou: {payload}")
 
             elif comando == "MATCH_INFO":
-                print(f"[GUI] Recebido MATCH_INFO! Iniciando P2P com: {payload}")
+                logger.info(f"recebido match_info! iniciando p2p com: {payload}")
                 self.abrir_cozinha_pygame(payload)
 
         self.after(100, self.verificar_fila)
     
     def construir_tela_login(self):
-        # Frame centralizador
+        # frame centralizador
         self.frame_login = ctk.CTkFrame(self, fg_color="transparent")
         self.frame_login.place(relx=0.5, rely=0.5, anchor="center")
 
-        # Frame invisível para agrupar o título e a imagem horizontalmente
+        # frame invisivel para agrupar o titulo e a imagem horizontalmente
         self.frame_titulo = ctk.CTkFrame(self.frame_login, fg_color="transparent")
         self.frame_titulo.pack(pady=(0, 40))
 
@@ -83,15 +85,15 @@ class PizzariaApp(ctk.CTk):
         )
         self.lbl_texto_titulo.pack(side="left")
 
-        # Imagem da pizza
+        # imagem da pizza
         img_pizza = Image.open("cliente/gui/assets/pizza.png")
         ctk_img_pizza = ctk.CTkImage(light_image=img_pizza, size=(40, 40))
         
         self.lbl_img_pizza = ctk.CTkLabel(self.frame_titulo, image=ctk_img_pizza, text="")
-        # side="left" alinha a imagem exatamente à direita do texto
+        # side="left" alinha a imagem exatamente a direita do texto
         self.lbl_img_pizza.pack(side="left", padx=(10, 0), pady=(0, 10))
 
-        # Gera a imagem da coruja recolorida dinamicamente
+        # gera a imagem da coruja recolorida dinamicamente
         imagem_pil = recolorir_coruja(
             "cliente/gui/assets/coruja_vestida.png", 
             cor_corpo="#D19C74",
@@ -101,14 +103,14 @@ class PizzariaApp(ctk.CTk):
             cor_olhos="#D7C9B2"
         )
         
-        # Converte a imagem Pillow para o formato nativo do CustomTkinter
+        # converte a imagem pillow para o formato nativo do customtkinter
         owl_image = ctk.CTkImage(light_image=imagem_pil, size=(97, 163))
         
         self.lbl_coruja = ctk.CTkLabel(self.frame_login, image=owl_image, text="")
         
         self.lbl_coruja.pack(pady=(0, 0)) 
 
-        # Caixa de texto do nickname
+        # caixa de texto do nickname
         self.entry_nickname = ctk.CTkEntry(
             self.frame_login,
             placeholder_text="Insira seu nickname",
@@ -122,7 +124,7 @@ class PizzariaApp(ctk.CTk):
             justify="center",
             text_color="black",
         )
-        # o pady=(0, 20) afasta o conjunto do fundo da tela, mantendo a colisão em cima
+        # o pady=(0, 20) afasta o conjunto do fundo da tela, mantendo a colisao em cima
         self.entry_nickname.pack(pady=(0, 20))
         self.entry_nickname.bind("<Return>", self.enviar_login)
 
@@ -133,7 +135,7 @@ class PizzariaApp(ctk.CTk):
         
         self.meu_nickname = nickname
 
-        # conexao de rede (disparando o AUTH_CONN)
+        # conexao de rede (disparando o auth_conn)
         try:
             import socket
             self.udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -142,7 +144,7 @@ class PizzariaApp(ctk.CTk):
 
             self.client_socket = conectar_servidor()
             
-            # agora envia o formato que o servidor da sua colega espera: "Nome:Porta"
+            # agora envia o formato que o servidor espera: "nome:porta"
             mensagem = formatar_mensagem("AUTH_CONN", f"{nickname}:{self.minha_porta_udp}")
             self.client_socket.sendall(mensagem)
             
@@ -157,7 +159,7 @@ class PizzariaApp(ctk.CTk):
             self.entry_nickname.configure(state="disabled")
             
         except Exception as e:
-            print(f"Falha ao conectar: {e}")
+            logger.error(f"falha ao conectar: {e}")
             
     def construir_tela_lobby(self):
         # frame principal que ocupa a tela toda
@@ -183,7 +185,7 @@ class PizzariaApp(ctk.CTk):
         )
         self.caixa_chat.pack(fill="both", expand=True, pady=(0, 10))
         self.caixa_chat.insert("end", "Bem-vindo à Cojura's Pizzeria!\n\n")
-        self.caixa_chat.configure(state="disabled") # Bloqueia digitação direta no histórico
+        self.caixa_chat.configure(state="disabled") # bloqueia digitacao direta no historico
 
         # rodape do chat
         self.frame_input_chat = ctk.CTkFrame(self.frame_esquerdos, fg_color="transparent")
@@ -219,7 +221,7 @@ class PizzariaApp(ctk.CTk):
         # painel direito
         self.frame_direito = ctk.CTkFrame(self.frame_lobby, fg_color="transparent", width=250)
         self.frame_direito.pack(side="right", fill="y")
-        self.frame_direito.pack_propagate(False) # forçando a largura fixa de 250px
+        self.frame_direito.pack_propagate(False) # forcando a largura fixa de 250px
 
         # titulo lista online
         ctk.CTkLabel(self.frame_direito, text="👥 Online", font=("Courier", 20, "bold"), text_color="black").pack(anchor="w", pady=(0, 10))
@@ -250,7 +252,7 @@ class PizzariaApp(ctk.CTk):
                 corner_radius=15,
                 fg_color=cor,
                 hover_color=cor,
-                # o lambda captura a cor clicada e dispara a mudança pro servidor
+                # o lambda captura a cor clicada e dispara a mudanca pro servidor
                 command=lambda c=cor: self.mudar_cor_avental(c) 
             )
             btn_cor.pack(side="left", padx=5)
@@ -260,10 +262,10 @@ class PizzariaApp(ctk.CTk):
         if not texto:
             return
             
-        # limpa a caixa de digitação
+        # limpa a caixa de digitacao
         self.entry_chat.delete(0, "end")
         
-        # atualiza a própria tela
+        # atualiza a propria tela
         self.caixa_chat.configure(state="normal")
         self.caixa_chat.insert("end", f"Você: {texto}\n")
         self.caixa_chat.see("end") # rola para o fim
@@ -271,15 +273,15 @@ class PizzariaApp(ctk.CTk):
 
         # criptografa e envia pela rede
         texto_cifrado = criptografar(texto)
-        mensagem_formatada = formatar_mensagem("SEND_CHAT", texto_cifrado) # Troque para texto_cifrado depois!
+        mensagem_formatada = formatar_mensagem("SEND_CHAT", texto_cifrado) 
         self.client_socket.sendall(mensagem_formatada)
 
     def mudar_cor_avental(self, cor_hex):
-        print(f"[GUI] Mudando cor do avental para: {cor_hex}")
+        logger.info(f"[{self.meu_nickname}] mudando cor do avental para: {cor_hex}")
         
         self.jogadores_online[self.meu_nickname]["cor"] = cor_hex
         self.desenhar_lista_jogadores()
-        # Envia o SYNC_STATUS para o servidor avisando que a coruja mudou
+        # envia o sync_status para o servidor avisando que a coruja mudou
         mensagem = formatar_mensagem("SYNC_STATUS", cor_hex)
         self.client_socket.sendall(mensagem)
         
@@ -292,13 +294,13 @@ class PizzariaApp(ctk.CTk):
             self.caixa_chat.configure(state="disabled")
             
         # atualiza o dicionario de jogadores
-        # verifica primeiro se eh um aviso de partida
+        # verifica primeiro se e um aviso de partida
         if " entrou em partida" in payload:
             nome = payload.replace(" entrou em partida", "").strip()
             if nome in self.jogadores_online:
                 self.jogadores_online[nome]["ocupado"] = True
                 
-        # depois verifica se eh um aviso de login normal
+        # depois verifica se e um aviso de login normal
         elif " entrou" in payload:
             nome = payload.replace(" entrou", "").strip()
             self.jogadores_online[nome] = {"cor": "#464646", "ocupado": False}
@@ -342,10 +344,10 @@ class PizzariaApp(ctk.CTk):
             avatar = ctk.CTkLabel(frame_item, image=ctk_img, text="")
             avatar.pack(side="left", padx=(5, 10))
             
-            # define o texto base (apenas o nome e a indicação de quem é você)
+            # define o texto base (apenas o nome e a indicacao de quem e voce)
             texto_exibicao = f"{nome} (Você)" if nome == self.meu_nickname else nome
                 
-            # o nome fica cinza se estiver ocupado, o que já é um ótimo indicador visual!
+            # o nome fica cinza se estiver ocupado
             lbl_nome = ctk.CTkLabel(frame_item, text=texto_exibicao, font=("Courier", 14, "bold"), text_color="gray" if ocupado else "black")
             lbl_nome.pack(side="left")
 
@@ -353,7 +355,6 @@ class PizzariaApp(ctk.CTk):
             if nome != self.meu_nickname:
                 btn_desafiar = ctk.CTkButton(
                     frame_item,
-                    # o próprio botão já informa o status, eliminando a falta de espaço
                     text="Ocupado" if ocupado else "Desafiar",
                     font=("Courier", 12, "bold"),
                     width=70,
@@ -367,7 +368,7 @@ class PizzariaApp(ctk.CTk):
                 btn_desafiar.pack(side="right", padx=(10, 10))
 
     def enviar_desafio(self, oponente):
-        print(f"[GUI] Enviando convite para {oponente}...")
+        logger.info(f"[{self.meu_nickname}] enviando convite para {oponente}...")
         self.oponente_atual = oponente
         mensagem = formatar_mensagem("REQ_MATCH", oponente)
         self.client_socket.sendall(mensagem)
@@ -419,14 +420,14 @@ class PizzariaApp(ctk.CTk):
             
         btn_sim = ctk.CTkButton(
             frame_botoes, text="Sim", command=aceitar, width=100, 
-            fg_color="#81B29A", hover_color="#5F8D76", # verde salvia suave
+            fg_color="#81B29A", hover_color="#5F8D76", 
             text_color="white", font=("Courier", 14, "bold")
         )
         btn_sim.pack(side="left", padx=15)
         
         btn_nao = ctk.CTkButton(
             frame_botoes, text="Não", command=recusar, width=100, 
-            fg_color="#E07A5F", hover_color="#B55A41", # terracota / laranja avermelhado suave
+            fg_color="#E07A5F", hover_color="#B55A41", 
             text_color="white", font=("Courier", 14, "bold")
         )
         btn_nao.pack(side="right", padx=15)
@@ -439,10 +440,8 @@ class PizzariaApp(ctk.CTk):
         porta_oponente = int(porta_oponente_str)
         semente_partida = int(semente_str)
         
-        print("\n" + "="*40)
-        print("🍕 BEM-VINDO À COZINHA (PYGAME)")
-        print(f"Adversário: {self.oponente_atual} ({ip_oponente}:{porta_oponente})")
-        print("="*40 + "\n")
+        logger.info(f"[{self.meu_nickname}] bem-vindo a cozinha (pygame)")
+        logger.info(f"[{self.meu_nickname}] adversario: {self.oponente_atual} ({ip_oponente}:{porta_oponente})")
         
         import cliente.gui.cozinha as cozinha
         

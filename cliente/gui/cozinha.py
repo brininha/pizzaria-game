@@ -3,9 +3,14 @@ import os
 import threading
 import random
 import socket
+from utils.logger import obter_logger
 
 def iniciar_partida(meu_nickname, oponente_nickname, ip_oponente, porta_oponente, meu_socket_udp, semente_partida):
     pygame.init()
+    
+    # inicia o logger para registrar os eventos p2p
+    logger = obter_logger("cozinha_pygame")
+    logger.info(f"[{meu_nickname}] partida p2p iniciada contra {oponente_nickname} (semente: {semente_partida})")
 
     largura, altura = 800, 600
     tela = pygame.display.set_mode((largura, altura))
@@ -32,14 +37,14 @@ def iniciar_partida(meu_nickname, oponente_nickname, ip_oponente, porta_oponente
             imagem = pygame.image.load(caminho).convert_alpha()
             return pygame.transform.scale(imagem, (60, 60)) # ajuste o tamanho dos tubos aqui
         except FileNotFoundError:
-            # placeholder temporario caso a imagem não exista na pasta ainda
+            # placeholder temporario caso a imagem nao exista na pasta ainda
             surf = pygame.Surface((60, 60))
             surf.fill((180, 180, 180))
             return surf
 
     img_massa = carregar_dimensionar("massa.png")
 
-    # mapeia a tecla para o nome descritivo e a imagem já carregada
+    # mapeia a tecla para o nome descritivo e a imagem ja carregada
     catalogo = {
         "molho": {
             pygame.K_1: {"nome": "Tomate", "img": carregar_dimensionar("molho-de-tomate.png"), "icone": carregar_icone("tubo-tomate.png")},
@@ -78,7 +83,7 @@ def iniciar_partida(meu_nickname, oponente_nickname, ip_oponente, porta_oponente
     fim_de_jogo = False
     vencedor = ""
 
-    # sincronizacao em tempo real
+    # sincronizacao em tempo real udp
     rodando = True
     def escutar_udp():
         nonlocal pontuacao_oponente, rodando, fim_de_jogo, vencedor
@@ -89,9 +94,10 @@ def iniciar_partida(meu_nickname, oponente_nickname, ip_oponente, porta_oponente
                 msg = dados.decode('utf-8')
                 if msg.startswith("SCORE:"):
                     pontuacao_oponente = int(msg.split(":")[1])
-                    if pontuacao_oponente >= 100:
+                    if pontuacao_oponente >= 100 and not fim_de_jogo:
                         vencedor = oponente_nickname
                         fim_de_jogo = True
+                        logger.info(f"[{meu_nickname}] {oponente_nickname} atingiu 100 pontos e venceu a partida")
             except socket.timeout:
                 continue
             except Exception as e:
@@ -130,18 +136,21 @@ def iniciar_partida(meu_nickname, oponente_nickname, ip_oponente, porta_oponente
                         pontuacao_jogador += 10
                         indice_pedido += 1
                         
-                        # dispara o ponto via UDP para o oponente
+                        logger.info(f"[{meu_nickname}] pizza {indice_pedido} montada com sucesso! enviando pontuacao {pontuacao_jogador} via udp")
+                        
+                        # dispara o ponto via udp para o oponente
                         meu_socket_udp.sendto(f"SCORE:{pontuacao_jogador}".encode('utf-8'), (ip_oponente, porta_oponente))
                         
                         # verifica se ganhou
                         if pontuacao_jogador >= 100:
                             vencedor = meu_nickname
                             fim_de_jogo = True
+                            logger.info(f"[{meu_nickname}] alcancou 100 pontos e venceu a partida")
                     
-                    # independentemente de acertar ou errar, a bandeja limpa para a próxima tentativa
+                    # independentemente de acertar ou errar, a bandeja limpa para a proxima tentativa
                     pizza_atual = {"molho": None, "queijo": None, "extra": None}
 
-        # renderização do HUD
+        # renderizacao do hud
         texto_jogador = fonte_pixel.render(f"{meu_nickname}: R${pontuacao_jogador}", True, verde if pontuacao_jogador > pontuacao_oponente else preto)
         texto_oponente = fonte_pixel.render(f"{oponente_nickname}: R${pontuacao_oponente}", True, vermelho if pontuacao_oponente > pontuacao_jogador else preto)
 
@@ -330,5 +339,6 @@ def iniciar_partida(meu_nickname, oponente_nickname, ip_oponente, porta_oponente
         pygame.display.flip()
         relogio.tick(60)
 
-    # ao fechar a janela do Pygame, volta ao estado limpo
+    # ao fechar a janela do pygame, volta ao estado limpo
+    logger.info(f"[{meu_nickname}] fechou a janela da cozinha e retornou ao lobby")
     pygame.quit()
