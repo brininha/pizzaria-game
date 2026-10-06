@@ -342,11 +342,10 @@ class PizzariaApp(ctk.CTk):
             avatar = ctk.CTkLabel(frame_item, image=ctk_img, text="")
             avatar.pack(side="left", padx=(5, 10))
             
-            # adiciona o cadeado se estiver ocupado
+            # define o texto base (apenas o nome e a indicação de quem é você)
             texto_exibicao = f"{nome} (Você)" if nome == self.meu_nickname else nome
-            if ocupado:
-                texto_exibicao += " (Ocupado)"
                 
+            # o nome fica cinza se estiver ocupado, o que já é um ótimo indicador visual!
             lbl_nome = ctk.CTkLabel(frame_item, text=texto_exibicao, font=("Courier", 14, "bold"), text_color="gray" if ocupado else "black")
             lbl_nome.pack(side="left")
 
@@ -354,12 +353,12 @@ class PizzariaApp(ctk.CTk):
             if nome != self.meu_nickname:
                 btn_desafiar = ctk.CTkButton(
                     frame_item,
+                    # o próprio botão já informa o status, eliminando a falta de espaço
                     text="Ocupado" if ocupado else "Desafiar",
                     font=("Courier", 12, "bold"),
                     width=70,
                     height=24,
                     corner_radius=8,
-                    # se estiver ocupado, fica cinza e desativado
                     fg_color="#555555" if ocupado else "#A31D1D",
                     hover_color="#555555" if ocupado else "#801515",
                     state="disabled" if ocupado else "normal",
@@ -375,21 +374,41 @@ class PizzariaApp(ctk.CTk):
 
     # funcao para mostrar o convite de partida        
     def mostrar_convite(self, desafiante):
-        # cria uma janela sobreposta para o convite
         janela_convite = ctk.CTkToplevel(self)
-        janela_convite.title("Novo desafio!")
-        janela_convite.geometry("300x150")
+        janela_convite.title("Novo Desafio!")
+        
+        # centralizar a janela de convite em relacao a janela principal do lobby
+        largura_popup = 340
+        altura_popup = 160
+        x_main = self.winfo_x()
+        y_main = self.winfo_y()
+        w_main = self.winfo_width()
+        h_main = self.winfo_height()
+        
+        x_popup = x_main + (w_main // 2) - (largura_popup // 2)
+        y_popup = y_main + (h_main // 2) - (altura_popup // 2)
+        
+        janela_convite.geometry(f"{largura_popup}x{altura_popup}+{x_popup}+{y_popup}")
         janela_convite.attributes("-topmost", True)
         
-        lbl_texto = ctk.CTkLabel(janela_convite, text=f"{desafiante} te desafiou!\nAceitar partida?", font=("Courier", 14, "bold"))
-        lbl_texto.pack(pady=20)
+        # aplica a mesma cor de fundo bege do lobby
+        janela_convite.configure(fg_color="#F6F4E8")
+        
+        lbl_texto = ctk.CTkLabel(
+            janela_convite, 
+            text=f"O(a) {desafiante} desafiou-o!\nAceitar a partida?", 
+            font=("Courier", 16, "bold"), 
+            text_color="black"
+        )
+        lbl_texto.pack(pady=25)
         
         frame_botoes = ctk.CTkFrame(janela_convite, fg_color="transparent")
         frame_botoes.pack()
         
+        # botoes com cores mais suaves e elegantes
         def aceitar():
-            mensagem = formatar_mensagem("ACCEPT_MATCH", desafiante)
             self.oponente_atual = desafiante
+            mensagem = formatar_mensagem("ACCEPT_MATCH", desafiante)
             self.client_socket.sendall(mensagem)
             janela_convite.destroy()
             
@@ -398,11 +417,19 @@ class PizzariaApp(ctk.CTk):
             self.client_socket.sendall(mensagem)
             janela_convite.destroy()
             
-        btn_sim = ctk.CTkButton(frame_botoes, text="Sim", command=aceitar, width=80, fg_color="green", hover_color="darkgreen")
-        btn_sim.pack(side="left", padx=10)
+        btn_sim = ctk.CTkButton(
+            frame_botoes, text="Sim", command=aceitar, width=100, 
+            fg_color="#81B29A", hover_color="#5F8D76", # verde salvia suave
+            text_color="white", font=("Courier", 14, "bold")
+        )
+        btn_sim.pack(side="left", padx=15)
         
-        btn_nao = ctk.CTkButton(frame_botoes, text="Não", command=recusar, width=80, fg_color="#A31D1D", hover_color="#801515")
-        btn_nao.pack(side="right", padx=10)
+        btn_nao = ctk.CTkButton(
+            frame_botoes, text="Não", command=recusar, width=100, 
+            fg_color="#E07A5F", hover_color="#B55A41", # terracota / laranja avermelhado suave
+            text_color="white", font=("Courier", 14, "bold")
+        )
+        btn_nao.pack(side="right", padx=15)
         
     def abrir_cozinha_pygame(self, info_oponente):
         self.withdraw()
