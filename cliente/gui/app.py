@@ -40,7 +40,8 @@ class PizzariaApp(ctk.CTk):
                 self.frame_login.destroy()
                 self.construir_tela_lobby()
                 
-                self.jogadores_online[self.meu_nickname] = "#464646" 
+                # self.jogadores_online[self.meu_nickname] = "#464646"
+                self.jogadores_online[self.meu_nickname] = {"cor": "#464646", "ocupado": False}
                 self.desenhar_lista_jogadores()
                 
             elif comando == "SEND_CHAT":
@@ -60,8 +61,8 @@ class PizzariaApp(ctk.CTk):
                 self.processar_sync_status(f"Desafio falhou: {payload}")
 
             elif comando == "MATCH_INFO":
-                self.processar_sync_status("Adversário conectado! Iniciando Pygame...")
-                print(f"[P2P] Iniciar conexão direta com: {payload}")
+                print(f"[GUI] Recebido MATCH_INFO! Iniciando P2P com: {payload}")
+                self.abrir_cozinha_pygame(payload)
 
         self.after(100, self.verificar_fila)
     
@@ -121,7 +122,7 @@ class PizzariaApp(ctk.CTk):
             justify="center",
             text_color="black",
         )
-        # O pady=(0, 20) afasta o conjunto do fundo da tela, mantendo a colisão em cima
+        # o pady=(0, 20) afasta o conjunto do fundo da tela, mantendo a colisão em cima
         self.entry_nickname.pack(pady=(0, 20))
         self.entry_nickname.bind("<Return>", self.enviar_login)
 
@@ -275,24 +276,31 @@ class PizzariaApp(ctk.CTk):
     def mudar_cor_avental(self, cor_hex):
         print(f"[GUI] Mudando cor do avental para: {cor_hex}")
         
-        self.jogadores_online[self.meu_nickname] = cor_hex
+        self.jogadores_online[self.meu_nickname]["cor"] = cor_hex
         self.desenhar_lista_jogadores()
         # Envia o SYNC_STATUS para o servidor avisando que a coruja mudou
         mensagem = formatar_mensagem("SYNC_STATUS", cor_hex)
         self.client_socket.sendall(mensagem)
         
     def processar_sync_status(self, payload):
-        # Mostra o aviso do sistema no chat
+        # mostra o aviso do sistema no chat
         if hasattr(self, 'caixa_chat'):
             self.caixa_chat.configure(state="normal")
             self.caixa_chat.insert("end", f"[SISTEMA] {payload}\n")
             self.caixa_chat.see("end")
             self.caixa_chat.configure(state="disabled")
             
-        # Atualiza o dicionário de jogadores
-        if " entrou" in payload:
+        # atualiza o dicionario de jogadores
+        # verifica primeiro se eh um aviso de partida
+        if " entrou em partida" in payload:
+            nome = payload.replace(" entrou em partida", "").strip()
+            if nome in self.jogadores_online:
+                self.jogadores_online[nome]["ocupado"] = True
+                
+        # depois verifica se eh um aviso de login normal
+        elif " entrou" in payload:
             nome = payload.replace(" entrou", "").strip()
-            self.jogadores_online[nome] = "#464646" # Cor padrão (cinza)
+            self.jogadores_online[nome] = {"cor": "#464646", "ocupado": False}
         
         elif " saiu" in payload:
             nome = payload.replace(" saiu", "").strip()
@@ -304,47 +312,63 @@ class PizzariaApp(ctk.CTk):
             nome = partes[0].strip()
             cor_hex = partes[1].strip()
             if nome in self.jogadores_online:
-                self.jogadores_online[nome] = cor_hex
+                self.jogadores_online[nome]["cor"] = cor_hex
 
-        # Redesenha a lista lateral apenas se o lobby já estiver aberto
         if hasattr(self, 'lista_jogadores'):
             self.desenhar_lista_jogadores()
 
+
     def desenhar_lista_jogadores(self):
-        # limpa todos os itens atuais da tela
         for widget in self.lista_jogadores.winfo_children():
             widget.destroy()
             
-        # recria os itens atualizados
-        for nome, cor in self.jogadores_online.items():
+        for nome, info in self.jogadores_online.items():
+            # extrai os novos dados do dicionario
+            cor = info["cor"]
+            ocupado = info.get("ocupado", False)
+            
             frame_item = ctk.CTkFrame(self.lista_jogadores, fg_color="transparent")
             frame_item.pack(fill="x", pady=5)
             
-            # gera a miniatura dinamica passando a cor do dicionario para a imagem do avatar
-            imagem_pil = recolorir_coruja(
-                "cliente/gui/assets/coruja_vestida.png", 
-                cor_corpo="#D19C74",
-                cor_chapeu="#FFFFFF",
-                cor_avental=cor,     # a cor que o jogador selecionou!
-                cor_bolso=cor,
-                cor_olhos="#79431A"
-            )
-            
-            # Converte e ajusta o tamanho para caber na lista (ex: 30x40)
+            imagem_pil = recolorir_coruja("cliente/gui/assets/coruja_base.png", cor_corpo="#D19C74", cor_avental=cor, cor_bolso="#303030", cor_olhos="#79431A")
             ctk_img = ctk.CTkImage(light_image=imagem_pil, size=(30, 42))
             
             avatar = ctk.CTkLabel(frame_item, image=ctk_img, text="")
             avatar.pack(side="left", padx=(5, 10))
             
-            # Destaca o próprio jogador com "(Você)"
-            texto_exibicao = f"{nome} (você)" if nome == self.meu_nickname else nome
-            
-            lbl_nome = ctk.CTkLabel(frame_item, text=texto_exibicao, font=("Courier", 14, "bold"), text_color="black")
+            # adiciona o cadeado se estiver ocupado
+            texto_exibicao = f"{nome} (Você)" if nome == self.meu_nickname else nome
+            if ocupado:
+                texto_exibicao += " (Ocupado)"
+                
+            lbl_nome = ctk.CTkLabel(frame_item, text=texto_exibicao, font=("Courier", 14, "bold"), text_color="gray" if ocupado else "black")
             lbl_nome.pack(side="left")
 
-    # Função para mostrar o convite de partida        
+            # renderiza o botao de desafio
+            if nome != self.meu_nickname:
+                btn_desafiar = ctk.CTkButton(
+                    frame_item,
+                    text="Ocupado" if ocupado else "Desafiar",
+                    font=("Courier", 12, "bold"),
+                    width=70,
+                    height=24,
+                    corner_radius=8,
+                    # se estiver ocupado, fica cinza e desativado
+                    fg_color="#555555" if ocupado else "#A31D1D",
+                    hover_color="#555555" if ocupado else "#801515",
+                    state="disabled" if ocupado else "normal",
+                    command=lambda n=nome: self.enviar_desafio(n)
+                )
+                btn_desafiar.pack(side="right", padx=(10, 10))
+
+    def enviar_desafio(self, oponente):
+        print(f"[GUI] Enviando convite para {oponente}...")
+        mensagem = formatar_mensagem("REQ_MATCH", oponente)
+        self.client_socket.sendall(mensagem)
+
+    # funcao para mostrar o convite de partida        
     def mostrar_convite(self, desafiante):
-        # Cria uma janela sobreposta para o convite
+        # cria uma janela sobreposta para o convite
         janela_convite = ctk.CTkToplevel(self)
         janela_convite.title("Novo Desafio!")
         janela_convite.geometry("300x150")
@@ -371,6 +395,20 @@ class PizzariaApp(ctk.CTk):
         
         btn_nao = ctk.CTkButton(frame_botoes, text="Não", command=recusar, width=80, fg_color="#A31D1D", hover_color="#801515")
         btn_nao.pack(side="right", padx=10)
+        
+    def abrir_cozinha_pygame(self, info_oponente):
+        # esconde a janela do CustomTkinter
+        self.withdraw()
+        
+        # mostra um aviso no terminal
+        print("\n" + "="*40)
+        print("🍕 BEM-VINDO À COZINHA (PYGAME)")
+        print(f"Oponente no endereço: {info_oponente}")
+        print("="*40 + "\n")
+        
+        # chamando o codigo pygame
+        import cliente.gui.cozinha as cozinha
+        cozinha.iniciar_partida(info_oponente, self.meu_nickname) # conferir se os dados estao sendo passados da maneira certa depois
 
 # executa a aplicacao
 if __name__ == "__main__":
