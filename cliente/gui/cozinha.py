@@ -4,7 +4,7 @@ import threading
 import random
 import socket
 
-def iniciar_partida(meu_nickname, oponente_nickname, ip_oponente, porta_oponente, meu_socket_udp):
+def iniciar_partida(meu_nickname, oponente_nickname, ip_oponente, porta_oponente, meu_socket_udp, semente_partida):
     pygame.init()
 
     largura, altura = 800, 600
@@ -60,7 +60,7 @@ def iniciar_partida(meu_nickname, oponente_nickname, ip_oponente, porta_oponente
     
 
     # usando uma seed fixa, os dois computadores geram a exata mesma fila
-    random.seed(42) 
+    random.seed(semente_partida) 
     fila_pedidos = []
     for _ in range(10): 
         fila_pedidos.append({
@@ -186,30 +186,45 @@ def iniciar_partida(meu_nickname, oponente_nickname, ip_oponente, porta_oponente
             nome_queijo = catalogo["queijo"][pedido["queijo"]]["nome"]
             nome_extra = catalogo["extra"][pedido["extra"]]["nome"]
             
-            tecla_m = pygame.key.name(pedido['molho']).upper()
-            tecla_q = pygame.key.name(pedido['queijo']).upper()
-            tecla_e = pygame.key.name(pedido['extra']).upper()
-            
-            # desenha a caixa branca do pedido centralizada e um pouco menor
-            largura_caixa = 280
-            altura_caixa = 120
+            largura_caixa = 260
+            altura_caixa = 135
             x_caixa = (largura // 2) - (largura_caixa // 2)
-            y_caixa = 45
+            y_caixa = 40
             
-            pygame.draw.rect(tela, (255, 255, 255), (x_caixa, y_caixa, largura_caixa, altura_caixa), border_radius=10)
-            pygame.draw.rect(tela, preto, (x_caixa, y_caixa, largura_caixa, altura_caixa), width=3, border_radius=10)
+            # desenha uma sombra projetada para dar profundidade
+            pygame.draw.rect(tela, (200, 200, 200), (x_caixa + 6, y_caixa + 6, largura_caixa, altura_caixa))
             
-            texto_pedido = fonte_pixel.render(f"=== PEDIDO {indice_pedido + 1} ===", True, preto)
+            # fundo da comanda com tom de papel termico amarelado
+            cor_papel = (253, 250, 235)
+            pygame.draw.rect(tela, cor_papel, (x_caixa, y_caixa, largura_caixa, altura_caixa))
             
-            linha_molho = fonte_pixel.render(f"{tecla_m}. {nome_molho}", True, vermelho)
-            linha_queijo = fonte_pixel.render(f"{tecla_q}. {nome_queijo}", True, vermelho)
-            linha_extra = fonte_pixel.render(f"{tecla_e}. {nome_extra}", True, vermelho)
+            # desenha a barra de metal no topo
+            pygame.draw.rect(tela, (90, 90, 90), (x_caixa, y_caixa, largura_caixa, 12))
             
-            # ajusta as posicoes y para caber na caixa menor
-            tela.blit(texto_pedido, (largura // 2 - texto_pedido.get_width() // 2, 50))
-            tela.blit(linha_molho, (largura // 2 - linha_molho.get_width() // 2, 80))
-            tela.blit(linha_queijo, (largura // 2 - linha_queijo.get_width() // 2, 105))
-            tela.blit(linha_extra, (largura // 2 - linha_extra.get_width() // 2, 130))
+            # desenha a borda da comanda
+            pygame.draw.rect(tela, preto, (x_caixa, y_caixa, largura_caixa, altura_caixa), width=2)
+            
+            # desenha uma linha tracejada separando o cabecalho dos itens
+            y_linha = y_caixa + 45
+            for x_tracejado in range(x_caixa + 15, x_caixa + largura_caixa - 15, 12):
+                pygame.draw.line(tela, preto, (x_tracejado, y_linha), (x_tracejado + 6, y_linha), 1)
+            
+            # cria fontes exclusivas e menores para a comanda
+            fonte_comanda_titulo = pygame.font.SysFont("Courier", 20, bold=True)
+            fonte_comanda_item = pygame.font.SysFont("Courier", 16, bold=True)
+            
+            texto_pedido = fonte_comanda_titulo.render(f"PEDIDO {indice_pedido + 1}", True, preto)
+            
+            # renderiza os nomes com a fonte menor
+            linha_molho = fonte_comanda_item.render(f"- {nome_molho}", True, preto)
+            linha_queijo = fonte_comanda_item.render(f"- {nome_queijo}", True, preto)
+            linha_extra = fonte_comanda_item.render(f"- {nome_extra}", True, preto)
+            
+            # posiciona os textos com espacamento mais justo por causa da fonte menor
+            tela.blit(texto_pedido, (largura // 2 - texto_pedido.get_width() // 2, y_caixa + 20))
+            tela.blit(linha_molho, (largura // 2 - linha_molho.get_width() // 2, y_caixa + 55))
+            tela.blit(linha_queijo, (largura // 2 - linha_queijo.get_width() // 2, y_caixa + 75))
+            tela.blit(linha_extra, (largura // 2 - linha_extra.get_width() // 2, y_caixa + 95))
 
         # renderizacao da bancada de ingredientes no rodape
         if not fim_de_jogo:
@@ -217,15 +232,16 @@ def iniciar_partida(meu_nickname, oponente_nickname, ip_oponente, porta_oponente
             x_atual = 25 
             
             fonte_pequena = pygame.font.SysFont("Courier", 16, bold=True)
+            # fonte menor para caber o nome do ingrediente sem poluir
+            fonte_micro = pygame.font.SysFont("Courier", 11, bold=True)
             
             for categoria, itens in catalogo.items():
                 texto_cat = fonte_pequena.render(categoria.upper(), True, preto)
                 
-                # calcula o tamanho da caixa principal da categoria
                 qtd_itens = len(itens)
                 largura_caixa_cat = (qtd_itens * 70) + 10
                 
-                # desenha uma etiqueta (fundo branco, borda preta) para o titulo da categoria
+                # desenha a etiqueta do titulo da categoria
                 largura_titulo = texto_cat.get_width() + 16
                 pygame.draw.rect(tela, (255, 255, 255), (x_atual + 10, y_bancada - 28, largura_titulo, 24), border_radius=5)
                 pygame.draw.rect(tela, preto, (x_atual + 10, y_bancada - 28, largura_titulo, 24), width=2, border_radius=5)
@@ -240,17 +256,27 @@ def iniciar_partida(meu_nickname, oponente_nickname, ip_oponente, porta_oponente
                 
                 for indice, (tecla, dados) in enumerate(itens.items()):
                     icone = dados["icone"]
+                    nome_tecla = pygame.key.name(tecla).upper()
+                    nome_ingrediente = dados["nome"]
                     
-                    # desenha linha divisoria preta entre os ingredientes
                     if indice > 0:
                         pygame.draw.line(tela, preto, (x_item - 5, y_bancada + 10), (x_item - 5, y_bancada + 80), 2)
                     
-                    # centraliza o icone verticalmente na caixa (ja que tiramos o texto debaixo)
-                    tela.blit(icone, (x_item, y_bancada + 15))
+                    # sobe o icone para dar espaco aos textos
+                    tela.blit(icone, (x_item, y_bancada - 5))
+                    
+                    # nome descritivo (ex: manjericao)
+                    texto_nome = fonte_micro.render(nome_ingrediente, True, preto)
+                    offset_nome = (60 - texto_nome.get_width()) // 2
+                    tela.blit(texto_nome, (x_item + offset_nome, y_bancada + 54))
+                    
+                    # tecla de atalho limpa (ex: 1, 2)
+                    texto_tecla = fonte_pequena.render(f"{nome_tecla}", True, preto)
+                    offset_tecla = (60 - texto_tecla.get_width()) // 2
+                    tela.blit(texto_tecla, (x_item + offset_tecla, y_bancada + 68))
                     
                     x_item += 70 
                 
-                # espaco para a proxima caixa de categoria
                 x_atual += largura_caixa_cat + 20
         
         if fim_de_jogo:

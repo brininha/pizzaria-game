@@ -377,7 +377,7 @@ class PizzariaApp(ctk.CTk):
     def mostrar_convite(self, desafiante):
         # cria uma janela sobreposta para o convite
         janela_convite = ctk.CTkToplevel(self)
-        janela_convite.title("Novo Desafio!")
+        janela_convite.title("Novo desafio!")
         janela_convite.geometry("300x150")
         janela_convite.attributes("-topmost", True)
         
