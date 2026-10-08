@@ -227,6 +227,12 @@ def monitorar_inativos():
         for cliente_socket in list(clientes_online.keys()):
             ultimo_sinal = clientes_online[cliente_socket]["ultimo_sinal"]
             
+            status_atual = clientes_online[cliente_socket].get("status")
+            
+            # se estiver jogando, ignora o timeout e vai para o próximo!
+            if status_atual == "jogando":
+                continue
+            
             if tempo_atual - ultimo_sinal > 15: # passou do limite de tolerancia de 15s?
                 logger.warning("removendo cliente inativo por timeout")
                 
