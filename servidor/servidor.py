@@ -173,23 +173,32 @@ def lidar_com_cliente(conexao, endereco):
                         break
 
                 if socket_oponente:
-                   clientes_online[conexao]["status"] = "jogando"
-                   clientes_online[socket_oponente]["status"] = "jogando"
-
-                   fazer_broadcast(formatar_mensagem("SYNC_STATUS", f"{nickname} entrou em partida"))
-                   fazer_broadcast(formatar_mensagem("SYNC_STATUS", f"{nickname_oponente} entrou em partida"))
                    
-                   ip_recebedor = conexao.getpeername()[0]
-                   porta_recebedor = clientes_online[conexao]["porta_udp"]
-                   ip_oponente = socket_oponente.getpeername()[0]
-                   porta_oponente = clientes_online[socket_oponente]["porta_udp"]
+                    status_remetente = clientes_online[conexao].get("status")
+                    status_oponente = clientes_online[socket_oponente].get("status")
+                    
+                    if status_remetente == "disponivel" and status_oponente == "disponivel": 
+                    
+                        clientes_online[conexao]["status"] = "jogando"
+                        clientes_online[socket_oponente]["status"] = "jogando"
 
-                   # sorteia um numero aleatorio para guiar a fila de pedidos desta partida especifica
-                   semente_partida = random.randint(1000, 9999)
+                        fazer_broadcast(formatar_mensagem("SYNC_STATUS", f"{nickname} entrou em partida"))
+                        fazer_broadcast(formatar_mensagem("SYNC_STATUS", f"{nickname_oponente} entrou em partida"))
+                        
+                        ip_recebedor = conexao.getpeername()[0]
+                        porta_recebedor = clientes_online[conexao]["porta_udp"]
+                        ip_oponente = socket_oponente.getpeername()[0]
+                        porta_oponente = clientes_online[socket_oponente]["porta_udp"]
 
-                   # entrega o ip, porta e semente cruzados
-                   socket_oponente.sendall(formatar_mensagem("MATCH_INFO", f"{ip_recebedor}:{porta_recebedor}:{semente_partida}"))
-                   conexao.sendall(formatar_mensagem("MATCH_INFO", f"{ip_oponente}:{porta_oponente}:{semente_partida}"))
+                        # sorteia um numero aleatorio para guiar a fila de pedidos desta partida especifica
+                        semente_partida = random.randint(1000, 9999)
+
+                        # entrega o ip, porta e semente cruzados
+                        socket_oponente.sendall(formatar_mensagem("MATCH_INFO", f"{ip_recebedor}:{porta_recebedor}:{semente_partida}"))
+                        conexao.sendall(formatar_mensagem("MATCH_INFO", f"{ip_oponente}:{porta_oponente}:{semente_partida}"))
+                        
+                    else:
+                        conexao.sendall(formatar_mensagem("MATCH_REJECT", "Conflito de estado: jogador ocupado"))
             
             elif comando == 'REJECT_MATCH':
                 nickname_oponente = payload
@@ -227,17 +236,31 @@ def monitorar_inativos():
         for cliente_socket in list(clientes_online.keys()):
             ultimo_sinal = clientes_online[cliente_socket]["ultimo_sinal"]
             
+            status_atual = clientes_online[cliente_socket].get("status")
+            
+            # se estiver jogando, ignora o timeout e vai para o próximo!
+            if status_atual == "jogando":
+                continue
+            
             if tempo_atual - ultimo_sinal > 15: # passou do limite de tolerancia de 15s?
                 logger.warning("removendo cliente inativo por timeout")
+                
+                # salva o nome para poder avisar o lobby
+                nickname = clientes_online[cliente_socket]["nome"]
+                
+                # remove da memoria imediatamente
+                del clientes_online[cliente_socket]
+                
                 try:
-                    cliente_socket.close() # corta a ligacao forcadamente
+                    # shutdown() é o comando que força o recv() a destravar no Python
+                    cliente_socket.shutdown(socket.SHUT_RDWR)
+                    cliente_socket.close() 
                 except Exception:
                     pass
                 
-                # nota de arquitetura: ao fechar o socket aqui, o recv() que estava travado 
-                # la na funcao lidar_com_cliente vai rebentar. isso empurra o codigo daquela 
-                # thread diretamente para o bloco 'finally', que por sua vez remove o cliente 
-                # do dicionario e avisa o lobby inteiro da queda
+                # avisa os outros jogadores que a pessoa caiu
+                logger.info(f"{nickname} removido do lobby por inatividade.")
+                fazer_broadcast(formatar_mensagem("SYNC_STATUS", f"{nickname} caiu"))
 
 if __name__ == "__main__":
     server_socket = iniciar_servidor()

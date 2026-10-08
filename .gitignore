@@ -15,3 +15,5 @@ env/
 # Arquivos de SO
 .DS_Store
 Thumbs.db
+
+logs/
