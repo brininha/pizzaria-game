@@ -229,15 +229,23 @@ def monitorar_inativos():
             
             if tempo_atual - ultimo_sinal > 15: # passou do limite de tolerancia de 15s?
                 logger.warning("removendo cliente inativo por timeout")
+                
+                # salva o nome para poder avisar o lobby
+                nickname = clientes_online[cliente_socket]["nome"]
+                
+                # remove da memoria imediatamente
+                del clientes_online[cliente_socket]
+                
                 try:
-                    cliente_socket.close() # corta a ligacao forcadamente
+                    # shutdown() é o comando que força o recv() a destravar no Python
+                    cliente_socket.shutdown(socket.SHUT_RDWR)
+                    cliente_socket.close() 
                 except Exception:
                     pass
                 
-                # nota de arquitetura: ao fechar o socket aqui, o recv() que estava travado 
-                # la na funcao lidar_com_cliente vai rebentar. isso empurra o codigo daquela 
-                # thread diretamente para o bloco 'finally', que por sua vez remove o cliente 
-                # do dicionario e avisa o lobby inteiro da queda
+                # avisa os outros jogadores que a pessoa caiu
+                logger.info(f"{nickname} removido do lobby por inatividade.")
+                fazer_broadcast(formatar_mensagem("SYNC_STATUS", f"{nickname} caiu"))
 
 if __name__ == "__main__":
     server_socket = iniciar_servidor()
