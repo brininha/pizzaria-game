@@ -1,4 +1,6 @@
 '''
+Obs.: esse main.py ficou inutilizado, criamos outro depois que surgiu a interface.
+
 COMENTÁRIOS ELUCIDATIVOS
 
 Já tem vários comentários ao longo do código, só quero registrar a ideia do que se passa nessas linhas.
