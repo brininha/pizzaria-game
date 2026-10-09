@@ -1,41 +1,42 @@
 '''
-COMENTÁRIOS ELUCIDATIVOS
+COMENTARIOS ELUCIDATIVOS
 
-Esse arquivo contempla duas funções utilitárias usadas para codificar e decodificar mensagens.
+este arquivo contem duas funcoes auxiliares usadas para preparar e ler as mensagens da rede.
 
-Entendendo os parâmetros:
-Comando: instrução de entrega, usada para identificar a ação esperada pela tentativa de comunicação.
-Payload: é o conteúdo da mensagem, a informação que acompanha o comando.
-Exemplo: comando "SEND_CHAT" com payload "Oie, tudo bem?", a informação (payload) foi rotulada (comando).
+entendendo os parametros:
+comando: eh a instrucao principal, usada para identificar que tipo de acao o sistema deve tomar.
+payload: eh o conteudo da mensagem, a informacao extra que acompanha o comando.
+exemplo: comando "send_chat" com payload "oie, tudo bem?", a acao eh enviar um chat e a informacao eh o texto.
 
-Podemos pensar que estamos enviando cartas com rótulos e o texto em questão.
+formatar_mensagem eh usada antes do envio, ela junta o comando e o payload em uma linha e converte
+tudo para bytes, que e o formato exigido para trafegar pela rede.
 
-Breve explicação das funções:
-formatar_mensagem(...) é usada para envio de mensagens, elas tem que ir em linguagem que a máquina 
-entende, por isso é codificada em bytes.
-interpretar_mensagem(...) é usada para mensagens que chegam, decodificamos o que está escrito para
-conseguirmos interpretar a mensagem na linguagem humana.
+interpretar_mensagem eh usada quando os dados chegam, ela recebe o texto, separa o comando do conteudo
+e devolve os dois para que o sistema saiba o que fazer.
 '''
 
 from config import ENCODING
 
 def formatar_mensagem(comando: str, payload: str = "") -> bytes:
-    
-    # Monta a mensagem e codifica em bytes, pronta para ser enviada com sendall().
-
+    '''
+    junta o comando e a informacao, adiciona uma quebra de linha no final para marcar 
+    o fim do pacote e transforma tudo em bytes para poder ser enviado no socket.
+    '''
     mensagem = f"{comando} {payload}\n"
-    return mensagem.encode(ENCODING) # em bytes a mensagem consegue trafegar no socket
-
+    return mensagem.encode(ENCODING) 
 
 def interpretar_mensagem(dados_brutos: str) -> tuple[str, str]:
+    '''
+    pega a mensagem que chegou da rede, tira a quebra de linha do final e 
+    corta o texto no primeiro espaco em branco para separar o comando da informacao.
+    '''
+    dados_brutos = dados_brutos.strip() 
 
-    # Recebe a string já decodificada e separa no primeiro espaço, retornando (COMANDO, PAYLOAD).
-    
-    dados_brutos = dados_brutos.strip()  # remove o \n do fim
-
+    # verifica se tem espaco no texto para poder separar em duas variaveis
     if " " in dados_brutos:
         comando, payload = dados_brutos.split(" ", 1)
     else:
+        # se nao tiver espaco, significa que e um comando vazio, sem payload
         comando, payload = dados_brutos, ""
 
     return comando, payload
